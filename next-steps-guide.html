@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>トレマチ - 次のステップガイド</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-weight: 900;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: #666;
+        }
+
+        .timeline {
+            position: relative;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 30px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: white;
+            opacity: 0.3;
+        }
+
+        .step {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            margin-left: 80px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .step:hover {
+            transform: translateX(10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .step-number {
+            position: absolute;
+            left: -65px;
+            top: 2rem;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            z-index: 1;
+        }
+
+        .step h2 {
+            font-size: 1.8rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step-duration {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+            color: #666;
+        }
+
+        .step-content {
+            margin-top: 1rem;
+        }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .task-list li {
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: background 0.2s;
+        }
+
+        .task-list li:hover {
+            background: #e9ecef;
+        }
+
+        .task-list li::before {
+            content: '✓';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            border-left: 4px solid #00acc1;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 4px solid #ff9800;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left: 4px solid #4caf50;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 1rem;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+        }
+
+        .resources {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .resources h2 {
+            color: #667eea;
+            margin-bottom: 1.5rem;
+        }
+
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .resource-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            transition: transform 0.3s;
+        }
+
+        .resource-card:hover {
+            transform: translateY(-5px);
+            background: #e9ecef;
+        }
+
+        .resource-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .step {
+                margin-left: 60px;
+            }
+
+            .step-number {
+                width: 50px;
+                height: 50px;
+                left: -55px;
+                font-size: 1.5rem;
+            }
+
+            .timeline::before {
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🚀 トレマチ開発ガイド</h1>
+        <p class="subtitle">アイデアから実装まで - 完全ロードマップ</p>
+    </div>
+
+    <div class="timeline">
+        <!-- Step 1 -->
+        <div class="step">
+            <div class="step-number">1</div>
+            <h2>
+                💻 開発環境のセットアップ
+                <span class="step-duration">30分</span>
+            </h2>
+            <div class="step-content">
+                <p>まずは開発に必要なツールを準備しましょう。</p>
+                
+                <ul class="task-list">
+                    <li>Node.js 18以上をインストール</li>
+                    <li>VSCode など好きなエディタを用意</li>
+                    <li>Supabase アカウントを作成（無料）</li>
+                    <li>GitHub アカウントを作成（既にあればOK）</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>💡 ヒント:</strong> スターターコード（tradematch-starter.tar.gz）をダウンロードして解凍すれば、すぐに始められます！
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step">
+            <div class="step-number">2</div>
+            <h2>
+                🗄️ データベースのセットアップ
+                <span class="step-duration">1時間</span>
+            </h2>
+            <div class="step-content">
+                <p>Supabase でデータベースを構築します。</p>
+                
+                <ul class="task-list">
+                    <li>Supabase で新規プロジェクト作成</li>
+                    <li>PostGIS 拡張を有効化</li>
+                    <li>users, goods, matches テーブルを作成</li>
+                    <li>find_nearby_users 関数を登録</li>
+                    <li>環境変数（.env.local）を設定</li>
+                </ul>
+
+                <div class="warning-box">
+                    <strong>⚠️ 重要:</strong> SQL スクリプトは mvp-development-guide.md に記載されています。コピペで実行できます。
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step">
+            <div class="step-number">3</div>
+            <h2>
+                🎨 基本UIの実装
+                <span class="step-duration">2日</span>
+            </h2>
+            <div class="step-content">
+                <p>最小限の画面を作成します。</p>
+                
+                <ul class="task-list">
+                    <li>トップページ（ニックネーム入力）</li>
+                    <li>グッズ登録画面</li>
+                    <li>マッチング検索画面</li>
+                    <li>識別マーク表示画面</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>💡 ヒント:</strong> スターターコードに ColorCode コンポーネントが含まれています。これを参考にしてください。
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step">
+            <div class="step-number">4</div>
+            <h2>
+                📍 位置情報機能の実装
+                <span class="step-duration">2日</span>
+            </h2>
+            <div class="step-content">
+                <p>マッチングの核心機能を実装します。</p>
+                
+                <ul class="task-list">
+                    <li>Geolocation API で位置情報取得</li>
+                    <li>Supabase に位置情報を保存</li>
+                    <li>近くのユーザーを検索</li>
+                    <li>マッチング判定ロジック実装</li>
+                    <li>リアルタイム更新（Supabase Realtime）</li>
+                </ul>
+
+                <div class="warning-box">
+                    <strong>⚠️ 注意:</strong> 位置情報は HTTPS または localhost でのみ動作します。テスト時は localhost:3000 を使用してください。
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="step">
+            <div class="step-number">5</div>
+            <h2>
+                🧪 テストとデバッグ
+                <span class="step-duration">1-2日</span>
+            </h2>
+            <div class="step-content">
+                <p>実機でテストして問題を修正します。</p>
+                
+                <ul class="task-list">
+                    <li>2台のスマホでローカルテスト</li>
+                    <li>Chrome DevTools で位置情報をモック</li>
+                    <li>マッチングロジックの確認</li>
+                    <li>UI/UX の微調整</li>
+                    <li>エラーハンドリング追加</li>
+                </ul>
+
+                <div class="success-box">
+                    <strong>✅ ゴール:</strong> 2人が実際にマッチングして、カラーコードで相手を見つけられること！
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="step">
+            <div class="step-number">6</div>
+            <h2>
+                🌐 デプロイ
+                <span class="step-duration">1時間</span>
+            </h2>
+            <div class="step-content">
+                <p>インターネット上で使えるようにします。</p>
+                
+                <ul class="task-list">
+                    <li>GitHub にコードをプッシュ</li>
+                    <li>Vercel でプロジェクトをインポート</li>
+                    <li>環境変数を設定</li>
+                    <li>デプロイ完了！</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>💡 ヒント:</strong> Vercel は無料で使えます。デプロイ後、スマホで URL を開いて「ホーム画面に追加」すればアプリのように使えます。
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="step">
+            <div class="step-number">7</div>
+            <h2>
+                🎤 実地テスト
+                <span class="step-duration">継続的</span>
+            </h2>
+            <div class="step-content">
+                <p>実際のライブイベントで試してみましょう！</p>
+                
+                <ul class="task-list">
+                    <li>友達と一緒にライブ会場で試す</li>
+                    <li>ユーザーフィードバックを収集</li>
+                    <li>使いにくい点を記録</li>
+                    <li>改善案をリストアップ</li>
+                </ul>
+
+                <div class="success-box">
+                    <strong>🎉 おめでとうございます！</strong> MVPプロトタイプの完成です。ここからが本当のスタートです。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resources -->
+    <div class="resources">
+        <h2>📚 役立つリソース</h2>
+        <div class="resource-grid">
+            <div class="resource-card">
+                <h3>📖 開発ガイド</h3>
+                <p>mvp-development-guide.md に詳細な実装方法とコード例が含まれています</p>
+            </div>
+            <div class="resource-card">
+                <h3>💻 スターターコード</h3>
+                <p>tradematch-starter.tar.gz をダウンロードしてすぐに開始できます</p>
+            </div>
+            <div class="resource-card">
+                <h3>📋 設計仕様書</h3>
+                <p>design_spec.html で全体像と詳細仕様を確認できます</p>
+            </div>
+            <div class="resource-card">
+                <h3>🆘 困った時は</h3>
+                <p>Claudeにいつでも質問してください。コードレビューやデバッグもお手伝いします！</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Steps -->
+    <div class="resources" style="margin-top: 2rem;">
+        <h2>🚀 MVP完成後の次のステップ</h2>
+        
+        <div class="step-content">
+            <h3 style="color: #667eea; margin-top: 1rem;">Phase 2: 機能拡張</h3>
+            <ul class="task-list">
+                <li>ユーザー認証（Firebase Auth）</li>
+                <li>プッシュ通知</li>
+                <li>交換履歴と評価システム</li>
+                <li>簡易チャット機能</li>
+            </ul>
+
+            <h3 style="color: #667eea; margin-top: 1.5rem;">Phase 3: 本格的なアプリ化</h3>
+            <ul class="task-list">
+                <li>React Native への移行</li>
+                <li>App Store / Google Play 申請</li>
+                <li>マーケティング施策</li>
+                <li>ユーザー獲得</li>
+            </ul>
+
+            <div class="warning-box" style="margin-top: 1.5rem;">
+                <strong>💰 資金調達を考えている場合:</strong> MVP完成後、実際のユーザーデータを持って投資家にアプローチするのが効果的です。ピッチデッキの作成もお手伝いできます！
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align: center; margin-top: 3rem; padding-bottom: 2rem;">
+        <a href="#" class="cta-button" onclick="alert('Claudeがいつでもサポートします！何か質問があれば、遠慮なく聞いてください。'); return false;">
+            💬 実装で困ったらClaudeに相談
+        </a>
+    </div>
+</div>
+
+</body>
+</html>

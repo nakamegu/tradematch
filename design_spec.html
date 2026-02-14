@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>トレマチ - 設計仕様書</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF6B35;
+            --secondary: #004E89;
+            --accent: #FFD23F;
+            --success: #06D6A0;
+            --dark: #1A1A2E;
+            --light: #F8F9FA;
+            --gradient: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--light);
+            color: var(--dark);
+            line-height: 1.8;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: var(--gradient);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+            text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            opacity: 0.95;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        .date {
+            margin-top: 1rem;
+            font-family: 'DM Mono', monospace;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            background: white;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            margin-bottom: 3rem;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 2rem;
+            overflow-x: auto;
+        }
+
+        .nav-item {
+            white-space: nowrap;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            border: 2px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--primary);
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h3 {
+            color: var(--secondary);
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem;
+            font-weight: 600;
+        }
+
+        h4 {
+            color: var(--dark);
+            font-size: 1.2rem;
+            margin: 1.5rem 0 1rem;
+            font-weight: 600;
+        }
+
+        .emoji {
+            font-size: 1.5em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        th {
+            background: var(--secondary);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .tag {
+            display: inline-block;
+            background: var(--accent);
+            color: var(--dark);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 0.2rem;
+        }
+
+        .tag.success {
+            background: var(--success);
+            color: white;
+        }
+
+        .tag.primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .checklist li:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--primary);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .checklist li.checked {
+            background: #e7f5e7;
+        }
+
+        .checklist li.checked .checkbox {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .checkbox::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            display: none;
+        }
+
+        .checklist li.checked .checkbox::after {
+            display: block;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.2);
+        }
+
+        .feature-card h4 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 3rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -3.5rem;
+            top: 1.5rem;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 4px solid white;
+            box-shadow: 0 0 0 3px var(--primary);
+        }
+
+        .button {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            background: var(--gradient);
+            color: white;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(255, 107, 53, 0.4);
+        }
+
+        ul, ol {
+            margin: 1rem 0 1rem 2rem;
+        }
+
+        li {
+            margin: 0.5rem 0;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 4px solid var(--accent);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid var(--secondary);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left: 4px solid var(--success);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 2rem 1rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🎵 トレマチ (TradeMatcher)</h1>
+    <div class="subtitle">ライブグッズ交換マッチングアプリ 詳細設計仕様書</div>
+    <div class="date">作成日: 2026年2月14日 | バージョン: 1.0</div>
+</div>
+
+<nav class="nav">
+    <div class="nav-content">
+        <div class="nav-item active" onclick="scrollToSection('overview')">概要</div>
+        <div class="nav-item" onclick="scrollToSection('users')">ユーザー</div>
+        <div class="nav-item" onclick="scrollToSection('flow')">フロー</div>
+        <div class="nav-item" onclick="scrollToSection('features')">機能</div>
+        <div class="nav-item" onclick="scrollToSection('ui')">UI/UX</div>
+        <div class="nav-item" onclick="scrollToSection('security')">安全性</div>
+        <div class="nav-item" onclick="scrollToSection('tech')">技術</div>
+        <div class="nav-item" onclick="scrollToSection('roadmap')">ロードマップ</div>
+        <div class="nav-item" onclick="scrollToSection('checklist')">チェックリスト</div>
+    </div>
+</nav>
+
+<div class="container">
+    
+    <!-- プロジェクト概要 -->
+    <div class="section" id="overview">
+        <h2><span class="emoji">📋</span> 1. プロジェクト概要</h2>
+        
+        <div class="highlight-box">
+            <h3>ビジョン</h3>
+            <p><strong>ライブグッズのランダムトレーディングにおいて、会場で手軽に、安全に、リアルタイムで交換相手を見つけられる体験を提供する。</strong></p>
+        </div>
+
+        <h3>解決する課題</h3>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>❌ SNS上での手間</h4>
+                <p>事前にXやInstagramで交換相手を探し、約束を取り付ける必要があり、ドタキャンのリスクもある</p>
+            </div>
+            <div class="feature-card">
+                <h4>🔍 相手が見つからない</h4>
+                <p>身近に交換相手がいないため、欲しいグッズが手に入らない</p>
+            </div>
+            <div class="feature-card">
+                <h4>🎲 偶然への依存</h4>
+                <p>会場で誰が何を持っているか分からず、偶然の出会いに頼るしかない</p>
+            </div>
+            <div class="feature-card">
+                <h4>⚠️ 安全面の不安</h4>
+                <p>個人間取引での詐欺や偽物のリスク、安全面での懸念</p>
+            </div>
+        </div>
+
+        <h3>主な機能</h3>
+        <ul>
+            <li><span class="tag success">✅ グッズ登録</span> 持っているもの、欲しいものを登録</li>
+            <li><span class="tag primary">📍 位置情報マッチング</span> リアルタイムで近くの交換相手を検出</li>
+            <li><span class="tag">🔔 即時通知</span> マッチングしたら即座にお知らせ</li>
+            <li><span class="tag success">🎨 識別マーク</span> カラーコード、アバターで相手を見つけやすく</li>
+            <li><span class="tag primary">⭐ 評価システム</span> 信頼できるコミュニティを構築</li>
+        </ul>
+    </div>
+
+    <!-- ターゲットユーザー -->
+    <div class="section" id="users">
+        <h2><span class="emoji">👥</span> 2. ターゲットユーザーとペルソナ</h2>
+        
+        <div class="info-box">
+            <p><strong>ターゲット層:</strong> 年齢問わず、ライブやイベントに参加し、ランダムグッズを購入・トレードする全てのファン層</p>
+        </div>
+
+        <h3>ペルソナ例</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>項目</th>
+                    <th>ペルソナA</th>
+                    <th>ペルソナB</th>
+                    <th>ペルソナC</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>名前</strong></td>
+                    <td>美咲（20歳）</td>
+                    <td>太郎（28歳）</td>
+                    <td>花子（35歳）</td>
+                </tr>
+                <tr>
+                    <td><strong>好きなジャンル</strong></td>
+                    <td>アイドル</td>
+                    <td>アニメ</td>
+                    <td>バンド</td>
+                </tr>
+                <tr>
+                    <td><strong>課題</strong></td>
+                    <td>SNSで交換相手を探すのが面倒</td>
+                    <td>会場で誰が何を持っているか分からない</td>
+                    <td>詐欺が心配</td>
+                </tr>
+                <tr>
+                    <td><strong>期待する価値</strong></td>
+                    <td>手軽に交換相手が見つかる</td>
+                    <td>リアルタイムで近くの人とマッチング</td>
+                    <td>安全に交換できる</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ユーザーフロー -->
+    <div class="section" id="flow">
+        <h2><span class="emoji">🔄</span> 3. ユーザーフローとユースケース</h2>
+        
+        <h3>基本ユーザーフロー</h3>
+        
+        <h4>フロー1: 初回利用〜グッズ登録</h4>
+        <ol>
+            <li>アプリをダウンロード・インストール</li>
+            <li>アカウント登録（メールアドレス/SNS連携）</li>
+            <li>プロフィール設定（ニックネーム、アバター選択）</li>
+            <li>位置情報利用の許可</li>
+            <li>イベント/アーティストを選択</li>
+            <li>持っているグッズを登録</li>
+            <li>欲しいグッズを登録</li>
+        </ol>
+
+        <h4>フロー2: マッチング〜交換完了</h4>
+        <ol>
+            <li>ライブ会場に到着</li>
+            <li>アプリを起動し、「マッチング開始」ボタンをタップ</li>
+            <li>近くでマッチングが見つかると通知が届く</li>
+            <li>マッチング内容を確認（相手の提供グッズ、欲しいグッズ）</li>
+            <li>「交換する」ボタンをタップ → 相互承認</li>
+            <li>識別マーク（カラーコード＋アバター）が表示される</li>
+            <li>お互いに相手を見つけて、グッズを交換</li>
+            <li>「交換完了」ボタンをタップ</li>
+            <li>相手を評価（任意）</li>
+        </ol>
+
+        <h3>主要ユースケース</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ユースケース</th>
+                    <th>シナリオ</th>
+                    <th>期待される結果</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>UC-01: 即座の交換</strong></td>
+                    <td>ライブ会場に到着後、すぐにアプリを起動してマッチング開始</td>
+                    <td>5分以内に交換相手が見つかり、ライブ開始前に交換完了</td>
+                </tr>
+                <tr>
+                    <td><strong>UC-02: 複数交換</strong></td>
+                    <td>持っているグッズが複数あり、それぞれ違う相手と交換したい</td>
+                    <td>複数のマッチングが順次通知され、効率的に複数回交換</td>
+                </tr>
+                <tr>
+                    <td><strong>UC-03: 安全確認</strong></td>
+                    <td>相手のプロフィールと評価を確認してから交換を決めたい</td>
+                    <td>相手の評価スコアと過去の交換履歴を確認し、安心して交換</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- コア機能 -->
+    <div class="section" id="features">
+        <h2><span class="emoji">⚙️</span> 4. コア機能の詳細仕様</h2>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>1️⃣ グッズ登録機能</h4>
+                <ul>
+                    <li>イベント/アーティスト選択</li>
+                    <li>グッズ種類の選択（画像付き）</li>
+                    <li>所持グッズ登録（写真アップロード可）</li>
+                    <li>欲しいグッズ登録（優先順位付け）</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>2️⃣ 位置情報マッチング</h4>
+                <ul>
+                    <li>GPS/WiFi/基地局情報を利用</li>
+                    <li>半径50m〜200m以内を検索</li>
+                    <li>相互条件一致の自動検出</li>
+                    <li>プッシュ通知で即座にお知らせ</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>3️⃣ 識別マーク機能</h4>
+                <ul>
+                    <li>カラーコード（全画面表示）</li>
+                    <li>アバター表示</li>
+                    <li>4桁の数字コード</li>
+                    <li>簡易チャット機能</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>4️⃣ 交換完了・評価</h4>
+                <ul>
+                    <li>双方確認での交換完了</li>
+                    <li>5段階評価システム</li>
+                    <li>コメント記入可能</li>
+                    <li>問題報告機能</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI/UX設計 -->
+    <div class="section" id="ui">
+        <h2><span class="emoji">🎨</span> 5. 画面構成とUI/UX設計</h2>
+        
+        <h3>主要画面一覧</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>画面名</th>
+                    <th>主な機能</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>スプラッシュ</strong></td><td>アプリロゴ表示</td></tr>
+                <tr><td><strong>ログイン/新規登録</strong></td><td>メールアドレス or SNS連携でログイン</td></tr>
+                <tr><td><strong>チュートリアル</strong></td><td>アプリの使い方を3〜5画面で説明</td></tr>
+                <tr><td><strong>ホーム</strong></td><td>マッチング開始ボタン、登録グッズ一覧、通知</td></tr>
+                <tr><td><strong>グッズ登録</strong></td><td>イベント選択、グッズ種類選択、写真アップロード</td></tr>
+                <tr><td><strong>マッチング検索中</strong></td><td>近くの交換相手を検索中、ローディングアニメーション</td></tr>
+                <tr><td><strong>マッチング結果</strong></td><td>相手のプロフィール、評価、交換内容確認</td></tr>
+                <tr><td><strong>識別マーク表示</strong></td><td>カラーコード全画面表示、アバター、数字コード</td></tr>
+                <tr><td><strong>交換完了・評価</strong></td><td>「交換完了」ボタン、星評価、コメント入力</td></tr>
+                <tr><td><strong>マイページ</strong></td><td>プロフィール、交換履歴、評価一覧、設定</td></tr>
+            </tbody>
+        </table>
+
+        <h3>UI/UXデザイン原則</h3>
+        <div class="success-box">
+            <ul>
+                <li><strong>シンプルで直感的:</strong> 複雑な操作を避け、タップ数を最小限に</li>
+                <li><strong>視認性重視:</strong> 明るい色使い、大きなボタン、読みやすいフォント</li>
+                <li><strong>安心感のあるデザイン:</strong> 信頼できるコミュニティであることを視覚的に表現</li>
+                <li><strong>アクセシビリティ:</strong> 色覚異常にも配慮したカラーパレット</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 安全性 -->
+    <div class="section" id="security">
+        <h2><span class="emoji">🔒</span> 6. 安全性・信頼性の確保策</h2>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>🔐 ユーザー認証</h4>
+                <p>メールアドレス認証またはSNS連携（Google, Apple, LINE等）</p>
+                <p>1人1アカウントの原則</p>
+            </div>
+            
+            <div class="feature-card">
+                <h4>⭐ 評価システム</h4>
+                <p>累積評価スコアの表示</p>
+                <p>低評価ユーザーへの警告表示</p>
+            </div>
+            
+            <div class="feature-card">
+                <h4>🚫 通報・ブロック</h4>
+                <p>不適切な行為の通報機能</p>
+                <p>運営による確認とアカウント停止</p>
+            </div>
+            
+            <div class="feature-card">
+                <h4>🔍 プライバシー保護</h4>
+                <p>位置情報は相対的な距離のみ表示</p>
+                <p>個人情報の登録不要</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 技術スタック -->
+    <div class="section" id="tech">
+        <h2><span class="emoji">💻</span> 7. 技術スタック推奨</h2>
+        
+        <h3>フロントエンド（モバイルアプリ）</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>選択肢</th>
+                    <th>メリット</th>
+                    <th>デメリット</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>React Native</strong> ⭐ 推奨</td>
+                    <td>iOS/Android同時開発、豊富なライブラリ</td>
+                    <td>パフォーマンスがネイティブより劣る</td>
+                </tr>
+                <tr>
+                    <td><strong>Flutter</strong></td>
+                    <td>高速レンダリング、美しいUI</td>
+                    <td>Dart言語の習得が必要</td>
+                </tr>
+                <tr>
+                    <td><strong>Native (Swift/Kotlin)</strong></td>
+                    <td>最高のパフォーマンス</td>
+                    <td>開発コスト2倍、メンテナンスが大変</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="highlight-box">
+            <p><strong>推奨: React Native</strong> - 開発速度と費用対効果のバランスが良い</p>
+        </div>
+
+        <h3>バックエンド</h3>
+        <ul>
+            <li><strong>言語:</strong> Node.js (Express) または Python (FastAPI)</li>
+            <li><strong>データベース:</strong> PostgreSQL + Redis</li>
+            <li><strong>位置情報処理:</strong> PostGIS（地理空間データ検索）</li>
+            <li><strong>プッシュ通知:</strong> Firebase Cloud Messaging (FCM) + APNS</li>
+        </ul>
+
+        <h3>インフラ</h3>
+        <ul>
+            <li><strong>クラウド:</strong> AWS または Google Cloud Platform</li>
+            <li><strong>コンテナ:</strong> Docker + Kubernetes</li>
+            <li><strong>CDN:</strong> CloudFlare</li>
+        </ul>
+    </div>
+
+    <!-- ロードマップ -->
+    <div class="section" id="roadmap">
+        <h2><span class="emoji">🗺️</span> 8. 開発ロードマップ</h2>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <h4>Phase 1: 企画・設計（2週間）</h4>
+                <p><strong>成果物:</strong> 要件定義書、設計書、ワイヤーフレーム</p>
+                <p><strong>リソース:</strong> PM 1名、デザイナー 1名</p>
+                <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+            </div>
+            
+            <div class="timeline-item">
+                <h4>Phase 2: MVP開発（8週間）</h4>
+                <p><strong>成果物:</strong> 動作する最小限のアプリ</p>
+                <p><strong>リソース:</strong> フロントエンド 2名、バックエンド 2名</p>
+                <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+            </div>
+            
+            <div class="timeline-item">
+                <h4>Phase 3: 拡張開発（6週間）</h4>
+                <p><strong>成果物:</strong> 通知、評価、チャット機能</p>
+                <p><strong>リソース:</strong> 同上</p>
+                <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+            </div>
+            
+            <div class="timeline-item">
+                <h4>Phase 4: テスト（3週間）</h4>
+                <p><strong>成果物:</strong> テストレポート、バグ修正</p>
+                <p><strong>リソース:</strong> QA 2名</p>
+                <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+            </div>
+            
+            <div class="timeline-item">
+                <h4>Phase 5: リリース（1週間）</h4>
+                <p><strong>成果物:</strong> App Store/Google Play公開</p>
+                <p><strong>リソース:</strong> 全員</p>
+                <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+            </div>
+        </div>
+
+        <div class="success-box">
+            <p><strong>合計開発期間: 約5ヶ月（20週間）</strong></p>
+        </div>
+    </div>
+
+    <!-- チェックリスト -->
+    <div class="section" id="checklist">
+        <h2><span class="emoji">✅</span> 9. 開発チェックリスト</h2>
+        
+        <h3>Phase 1: 企画・設計</h3>
+        <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>要件定義の完了</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>ユーザーペルソナの作成</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>ワイヤーフレームの作成</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>データベース設計</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>API設計書の作成</span></li>
+        </ul>
+
+        <h3>Phase 2: MVP開発</h3>
+        <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>ユーザー認証機能</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>グッズ登録機能</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>位置情報取得機能</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>基本マッチングロジック</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>識別マーク表示機能</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>交換完了機能</span></li>
+        </ul>
+
+        <h3>Phase 3: 拡張機能開発</h3>
+        <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>プッシュ通知機能</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>評価システム</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>チャット機能</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>通報・ブロック機能</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>グッズデータベース拡充</span></li>
+        </ul>
+
+        <h3>Phase 4: テスト・リリース</h3>
+        <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>単体テスト</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>統合テスト</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>ユーザビリティテスト</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>セキュリティ監査</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>App Store / Google Play審査対応</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>ベータ版リリース</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>正式版リリース</span></li>
+        </ul>
+
+        <h3>Phase 5: 運用・改善</h3>
+        <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>ユーザーフィードバック収集</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>バグ修正</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>パフォーマンス最適化</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>新機能の追加検討</span></li>
+            <li onclick="toggleCheck(this)"><div class="checkbox"></div><span>マーケティング施策実施</span></li>
+        </ul>
+    </div>
+
+    <!-- 将来の拡張 -->
+    <div class="section">
+        <h2><span class="emoji">🚀</span> 10. 付録: 将来の拡張アイデア</h2>
+        
+        <h3>短期的な改善案</h3>
+        <ul>
+            <li>AIによるマッチング精度向上（ユーザーの好みを学習）</li>
+            <li>事前マッチング予約機能（イベント数日前から）</li>
+            <li>グッズカタログの自動生成（公式サイトからスクレイピング）</li>
+        </ul>
+
+        <h3>中長期的な拡張案</h3>
+        <ul>
+            <li>グッズ売買機能（交換だけでなく販売・購入も可能に）</li>
+            <li>複数グッズの一括交換機能</li>
+            <li>仮想通貨・ポイント制度の導入</li>
+            <li>オンライン交換（郵送対応）</li>
+            <li>コミュニティ機能（掲示板、グループチャット）</li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+    function scrollToSection(id) {
+        const element = document.getElementById(id);
+        const navHeight = document.querySelector('.nav').offsetHeight;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - navHeight - 20;
+
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+        });
+
+        // Update active nav item
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    function toggleCheck(element) {
+        element.classList.toggle('checked');
+    }
+
+    // Smooth scroll for nav items
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate sections on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+    });
+</script>
+
+</body>
+</html>
