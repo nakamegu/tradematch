@@ -13,8 +13,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@supabase/supabase-js": "^2.38.4",
-    "zustand": "^4.4.7",
-    "next-pwa": "^5.6.0"
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
