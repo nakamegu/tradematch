@@ -79,7 +79,40 @@ CREATE POLICY "Anyone can delete user_goods" ON user_goods
   FOR DELETE USING (true);
 ```
 
+-- matches テーブル: 匿名アクセスを許可
+ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read matches" ON matches
+  FOR SELECT USING (true);
+
+CREATE POLICY "Anyone can insert matches" ON matches
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Anyone can update matches" ON matches
+  FOR UPDATE USING (true);
+```
+
 ⚠️ **注意**: これはMVP用の設定です。本番環境ではSupabase Authを導入し、`auth.uid()` ベースのポリシーに切り替えてください。
+
+### 1-6. Realtimeの有効化
+
+Supabase RealtimeでテーブルのINSERT/UPDATEをリアルタイム購読するには、対象テーブルのRealtimeを有効にする必要があります。
+
+1. Supabaseダッシュボード → **Database** → **Replication**
+2. **Source** セクションの `supabase_realtime` publication を確認
+3. 以下のテーブルを有効化（トグルをON）：
+   - `user_goods` — 新しいユーザーのグッズ登録をリアルタイム検知
+   - `matches` — 交換リクエスト・ステータス変更をリアルタイム同期
+
+または、SQL Editorで以下を実行：
+
+```sql
+-- Realtimeを有効化
+ALTER PUBLICATION supabase_realtime ADD TABLE user_goods;
+ALTER PUBLICATION supabase_realtime ADD TABLE matches;
+```
+
+✅ これにより、マッチングページで新規ユーザー登録時の自動再検索、交換リクエスト通知、識別ページでのステータス同期が有効になります。
 
 ### 1-5. 環境変数の取得
 

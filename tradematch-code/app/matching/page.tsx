@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface MatchResult {
   id: string;
   nickname: string;
   distance: number;
-  theyHave: string[];  // goods names the other person has that I want
-  youHave: string[];   // goods names I have that the other person wants
+  theyHave: string[];
+  youHave: string[];
   colorCode: string;
 }
 
@@ -22,48 +23,94 @@ export default function MatchingPage() {
   const [isSearching, setIsSearching] = useState(true);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [incomingRequest, setIncomingRequest] = useState<{
+    matchRecordId: string;
+    requesterName: string;
+    colorCode: string | null;
+    requesterId: string;
+  } | null>(null);
   const router = useRouter();
+  const channelsRef = useRef<RealtimeChannel[]>([]);
+  const matchingParamsRef = useRef<{
+    myHaveIds: string[];
+    myWantIds: string[];
+  } | null>(null);
 
-  useEffect(() => {
-    const haveData = localStorage.getItem('haveGoodsIds');
-    const wantData = localStorage.getItem('wantGoodsIds');
-    const nickname = localStorage.getItem('nickname');
-    const eventId = localStorage.getItem('selectedEventId');
+  // Search-only: does NOT insert/delete user_goods (safe to call from realtime)
+  const searchMatches = useCallback(async (
+    myHaveIds: string[],
+    myWantIds: string[],
+  ) => {
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
 
-    if (!haveData || !wantData || !nickname || !eventId) {
-      router.push('/register');
-      return;
-    }
+      const { data: otherUsers, error: matchError } = await supabase
+        .from('users')
+        .select('id, nickname')
+        .eq('is_active', true)
+        .neq('id', userId);
 
-    const myHaveIds: string[] = JSON.parse(haveData);
-    const myWantIds: string[] = JSON.parse(wantData);
+      if (matchError) {
+        console.error('Error finding users:', matchError);
+        return;
+      }
 
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocationGranted(true);
-          performMatching(
-            nickname,
-            myHaveIds,
-            myWantIds,
-            position.coords.latitude,
-            position.coords.longitude
-          );
-        },
-        (error) => {
-          console.error('位置情報の取得エラー:', error);
-          // Still allow matching without location (distance won't be accurate)
-          setLocationGranted(true);
-          performMatching(nickname, myHaveIds, myWantIds, 0, 0);
+      const { data: goodsData } = await supabase
+        .from('goods_master')
+        .select('id, name');
+
+      const goodsNameMap: Record<string, string> = {};
+      (goodsData || []).forEach((g: { id: string; name: string }) => {
+        goodsNameMap[g.id] = g.name;
+      });
+
+      const foundMatches: MatchResult[] = [];
+
+      for (const otherUser of otherUsers || []) {
+        const { data: theirGoods } = await supabase
+          .from('user_goods')
+          .select('goods_id, type')
+          .eq('user_id', otherUser.id);
+
+        if (!theirGoods) continue;
+
+        const theirHaveIds = theirGoods
+          .filter((g: { type: string }) => g.type === 'have')
+          .map((g: { goods_id: string }) => g.goods_id);
+        const theirWantIds = theirGoods
+          .filter((g: { type: string }) => g.type === 'want')
+          .map((g: { goods_id: string }) => g.goods_id);
+
+        const theyHaveIWant = theirHaveIds.filter((id: string) =>
+          myWantIds.includes(id)
+        );
+        const iHaveTheyWant = myHaveIds.filter((id) =>
+          theirWantIds.includes(id)
+        );
+
+        if (theyHaveIWant.length > 0 && iHaveTheyWant.length > 0) {
+          foundMatches.push({
+            id: otherUser.id,
+            nickname: otherUser.nickname,
+            distance: 0,
+            theyHave: theyHaveIWant.map((id: string) => goodsNameMap[id] || id),
+            youHave: iHaveTheyWant.map((id) => goodsNameMap[id] || id),
+            colorCode: COLOR_CODES[foundMatches.length % COLOR_CODES.length],
+          });
         }
-      );
-    } else {
-      setLocationGranted(true);
-      performMatching(nickname, myHaveIds, myWantIds, 0, 0);
-    }
-  }, [router]);
+      }
 
-  const performMatching = async (
+      setMatches(foundMatches);
+    } catch (err) {
+      console.error('Search error:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Initial registration + first search (called once)
+  const registerAndMatch = useCallback(async (
     nickname: string,
     myHaveIds: string[],
     myWantIds: string[],
@@ -75,7 +122,6 @@ export default function MatchingPage() {
       let userId = localStorage.getItem('userId');
 
       if (userId) {
-        // Update existing user
         await supabase
           .from('users')
           .update({
@@ -85,7 +131,6 @@ export default function MatchingPage() {
           })
           .eq('id', userId);
       } else {
-        // Create new user
         const { data: newUser, error } = await supabase
           .from('users')
           .insert({
@@ -112,7 +157,6 @@ export default function MatchingPage() {
           lat,
           lng,
         }).then(({ error }) => {
-          // Location update is best-effort; RPC may not exist yet
           if (error) console.log('Location update skipped:', error.message);
         });
       }
@@ -138,84 +182,182 @@ export default function MatchingPage() {
 
       await supabase.from('user_goods').insert(userGoodsRows);
 
-      // 4. Find matching users
-      // Get other active users who have goods I want AND want goods I have
-      const { data: otherUsers, error: matchError } = await supabase
-        .from('users')
-        .select('id, nickname')
-        .eq('is_active', true)
-        .neq('id', userId);
-
-      if (matchError) {
-        console.error('Error finding users:', matchError);
-        setIsSearching(false);
-        return;
-      }
-
-      // Build a goods name lookup
-      const allGoodsIds = [...new Set([...myHaveIds, ...myWantIds])];
-      const { data: goodsData } = await supabase
-        .from('goods_master')
-        .select('id, name');
-
-      const goodsNameMap: Record<string, string> = {};
-      (goodsData || []).forEach((g: { id: string; name: string }) => {
-        goodsNameMap[g.id] = g.name;
-      });
-
-      const foundMatches: MatchResult[] = [];
-
-      for (const otherUser of otherUsers || []) {
-        // Get the other user's goods
-        const { data: theirGoods } = await supabase
-          .from('user_goods')
-          .select('goods_id, type')
-          .eq('user_id', otherUser.id);
-
-        if (!theirGoods) continue;
-
-        const theirHaveIds = theirGoods
-          .filter((g: { type: string }) => g.type === 'have')
-          .map((g: { goods_id: string }) => g.goods_id);
-        const theirWantIds = theirGoods
-          .filter((g: { type: string }) => g.type === 'want')
-          .map((g: { goods_id: string }) => g.goods_id);
-
-        // They have what I want
-        const theyHaveIWant = theirHaveIds.filter((id: string) =>
-          myWantIds.includes(id)
-        );
-        // I have what they want
-        const iHaveTheyWant = myHaveIds.filter((id) =>
-          theirWantIds.includes(id)
-        );
-
-        if (theyHaveIWant.length > 0 && iHaveTheyWant.length > 0) {
-          foundMatches.push({
-            id: otherUser.id,
-            nickname: otherUser.nickname,
-            distance: 0, // TODO: calculate real distance with PostGIS
-            theyHave: theyHaveIWant.map((id: string) => goodsNameMap[id] || id),
-            youHave: iHaveTheyWant.map((id) => goodsNameMap[id] || id),
-            colorCode: COLOR_CODES[foundMatches.length % COLOR_CODES.length],
-          });
-        }
-      }
-
-      setMatches(foundMatches);
+      // 4. Now search for matches
+      await searchMatches(myHaveIds, myWantIds);
     } catch (err) {
-      console.error('Matching error:', err);
-    } finally {
+      console.error('Registration error:', err);
       setIsSearching(false);
     }
+  }, [searchMatches]);
+
+  useEffect(() => {
+    const haveData = localStorage.getItem('haveGoodsIds');
+    const wantData = localStorage.getItem('wantGoodsIds');
+    const nickname = localStorage.getItem('nickname');
+    const eventId = localStorage.getItem('selectedEventId');
+
+    if (!haveData || !wantData || !nickname || !eventId) {
+      router.push('/register');
+      return;
+    }
+
+    const myHaveIds: string[] = JSON.parse(haveData);
+    const myWantIds: string[] = JSON.parse(wantData);
+    matchingParamsRef.current = { myHaveIds, myWantIds };
+
+    const startMatching = (lat: number, lng: number) => {
+      setLocationGranted(true);
+      registerAndMatch(nickname, myHaveIds, myWantIds, lat, lng);
+    };
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => startMatching(position.coords.latitude, position.coords.longitude),
+        () => startMatching(0, 0)
+      );
+    } else {
+      startMatching(0, 0);
+    }
+
+    // Subscribe to realtime channels after a short delay to avoid StrictMode race
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const setupChannels = () => {
+      if (cancelled) return;
+
+      const channelId = Date.now().toString();
+
+      const userGoodsChannel = supabase
+        .channel(`user_goods_${channelId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'user_goods' },
+          (payload) => {
+            console.log('[Realtime] user_goods INSERT received:', payload.new);
+            // Ignore own inserts to prevent loops
+            const currentUserId = localStorage.getItem('userId');
+            const inserted = payload.new as { user_id: string };
+            if (inserted.user_id === currentUserId) return;
+
+            // Debounce: multiple rows are inserted at once
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              const params = matchingParamsRef.current;
+              if (params) {
+                console.log('[Realtime] Re-searching matches...');
+                searchMatches(params.myHaveIds, params.myWantIds);
+              }
+            }, 1000);
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] user_goods channel status:', status);
+        });
+
+      const matchesChannel = supabase
+        .channel(`matches_${channelId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'matches' },
+          async (payload) => {
+            console.log('[Realtime] matches INSERT received:', payload.new);
+            const currentUserId = localStorage.getItem('userId');
+            const newMatch = payload.new as {
+              id: string;
+              user1_id: string;
+              user2_id: string;
+              color_code: string | null;
+            };
+            if (newMatch.user2_id === currentUserId) {
+              const { data: requester } = await supabase
+                .from('users')
+                .select('nickname')
+                .eq('id', newMatch.user1_id)
+                .single();
+              const name = requester?.nickname || '誰か';
+              setIncomingRequest({
+                matchRecordId: newMatch.id,
+                requesterName: name,
+                colorCode: newMatch.color_code,
+                requesterId: newMatch.user1_id,
+              });
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] matches channel status:', status);
+        });
+
+      channelsRef.current = [userGoodsChannel, matchesChannel];
+    };
+
+    // Delay channel setup slightly to let React StrictMode cleanup pass
+    const setupTimer = setTimeout(setupChannels, 100);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(setupTimer);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
+      channelsRef.current = [];
+    };
+  }, [router, registerAndMatch, searchMatches]);
+
+  const handleMatch = async (matchUserId: string) => {
+    const match = matches.find((m) => m.id === matchUserId);
+    if (!match) return;
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    // Create a match record in the DB
+    const { data: matchRecord, error } = await supabase
+      .from('matches')
+      .insert({
+        user1_id: userId,
+        user2_id: matchUserId,
+        status: 'pending',
+        color_code: match.colorCode,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error creating match:', error);
+    }
+
+    // Store match info for identify page
+    localStorage.setItem('currentMatch', JSON.stringify({
+      ...match,
+      matchRecordId: matchRecord?.id || null,
+    }));
+    router.push('/identify');
   };
 
-  const handleMatch = (matchId: string) => {
-    const match = matches.find((m) => m.id === matchId);
-    if (match) {
-      localStorage.setItem('currentMatch', JSON.stringify(match));
-      router.push('/identify');
-    }
+  const handleAcceptRequest = async () => {
+    if (!incomingRequest) return;
+
+    // Update match status to accepted
+    await supabase
+      .from('matches')
+      .update({ status: 'accepted' })
+      .eq('id', incomingRequest.matchRecordId);
+
+    // Find the requester in our matches list for goods info
+    const matchInfo = matches.find((m) => m.id === incomingRequest.requesterId);
+
+    // Store match info for identify page (using the SAME matchRecordId)
+    localStorage.setItem('currentMatch', JSON.stringify({
+      id: incomingRequest.requesterId,
+      nickname: incomingRequest.requesterName,
+      distance: matchInfo?.distance || 0,
+      theyHave: matchInfo?.theyHave || [],
+      youHave: matchInfo?.youHave || [],
+      colorCode: incomingRequest.colorCode || COLOR_CODES[0],
+      matchRecordId: incomingRequest.matchRecordId,
+    }));
+    router.push('/identify');
   };
 
   if (!locationGranted) {
@@ -254,6 +396,29 @@ export default function MatchingPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-500 to-pink-500 p-4">
       <div className="max-w-2xl mx-auto">
+        {/* Incoming trade request */}
+        {incomingRequest && (
+          <div className="bg-yellow-50 border-2 border-yellow-400 p-5 rounded-3xl mb-4 shadow-lg">
+            <p className="font-bold text-yellow-800 text-lg mb-3">
+              🔔 {incomingRequest.requesterName}さんから交換リクエスト！
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleAcceptRequest}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+              >
+                承認して識別へ →
+              </button>
+              <button
+                onClick={() => setIncomingRequest(null)}
+                className="px-4 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                後で
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">マッチング結果</h1>
           <p className="text-gray-600">
@@ -276,7 +441,7 @@ export default function MatchingPage() {
             </p>
             <div className="bg-blue-50 rounded-xl p-4 mb-4">
               <p className="text-sm text-gray-700">
-                💡 <strong>ヒント:</strong> より多くのグッズを登録すると、マッチングの可能性が高まります
+                💡 <strong>ヒント:</strong> 新しいユーザーが登録すると自動的に再検索されます。このページを開いたままお待ちください。
               </p>
             </div>
             <button

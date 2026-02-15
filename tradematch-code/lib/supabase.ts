@@ -34,3 +34,13 @@ export type UserGoods = {
   type: 'have' | 'want'
   quantity: number
 }
+
+export type Match = {
+  id: string
+  user1_id: string
+  user2_id: string
+  status: 'pending' | 'accepted' | 'completed' | 'cancelled'
+  color_code: string | null
+  matched_at: string
+  completed_at: string | null
+}
