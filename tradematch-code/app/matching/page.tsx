@@ -209,7 +209,7 @@ export default function MatchingPage() {
                 <div className="bg-purple-50 rounded-xl p-3">
                   <p className="text-sm font-semibold text-purple-700 mb-2">相手が持っている</p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    {match.theyHave.map((item, idx) => (
+                    {match.theyHave.map((item: string, idx: number) => (
                       <li key={idx}>✓ {item}</li>
                     ))}
                   </ul>
@@ -217,7 +217,7 @@ export default function MatchingPage() {
                 <div className="bg-pink-50 rounded-xl p-3">
                   <p className="text-sm font-semibold text-pink-700 mb-2">あなたが持っている</p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    {match.youHave.map((item, idx) => (
+                    {match.youHave.map((item: string, idx: number) => (
                       <li key={idx}>✓ {item}</li>
                     ))}
                   </ul>

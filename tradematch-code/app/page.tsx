@@ -11,7 +11,7 @@ export default function Home() {
     if (nickname.trim()) {
       // ニックネームをローカルストレージに保存
       localStorage.setItem('nickname', nickname);
-      router.push('/register');
+      router.push('/select-event');
     }
   };
 
