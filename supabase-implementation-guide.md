@@ -52,7 +52,36 @@
 
 ✅ 成功すると「✅ データベースセットアップ完了！」と表示されます
 
-### 1-4. 環境変数の取得
+### 1-4. RLSポリシーの追加（匿名アクセス用）
+
+デフォルトのスキーマでは `auth.uid()` を使ったRLSポリシーのみ設定されています。
+MVPでは認証なし（匿名）でアクセスするため、以下のSQLをSQL Editorで実行してください：
+
+```sql
+-- users テーブル: 匿名アクセスを許可
+CREATE POLICY "Anyone can insert users" ON users
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Anyone can update users" ON users
+  FOR UPDATE USING (true);
+
+CREATE POLICY "Anyone can delete users" ON users
+  FOR DELETE USING (true);
+
+-- user_goods テーブル: 匿名アクセスを許可
+CREATE POLICY "Anyone can insert user_goods" ON user_goods
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Anyone can update user_goods" ON user_goods
+  FOR UPDATE USING (true);
+
+CREATE POLICY "Anyone can delete user_goods" ON user_goods
+  FOR DELETE USING (true);
+```
+
+⚠️ **注意**: これはMVP用の設定です。本番環境ではSupabase Authを導入し、`auth.uid()` ベースのポリシーに切り替えてください。
+
+### 1-5. 環境変数の取得
 
 1. 左メニュー → **Project Settings** → **API**
 2. 以下をコピー：
