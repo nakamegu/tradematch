@@ -7,8 +7,8 @@ import Image from 'next/image';
 
 export default function RegisterPage() {
   const [goods, setGoods] = useState<GoodsMaster[]>([]);
-  const [haveGoods, setHaveGoods] = useState<string[]>([]);
-  const [wantGoods, setWantGoods] = useState<string[]>([]);
+  const [haveGoods, setHaveGoods] = useState<Record<string, number>>({});
+  const [wantGoods, setWantGoods] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [eventName, setEventName] = useState('');
   const router = useRouter();
@@ -23,7 +23,6 @@ export default function RegisterPage() {
   }, [router]);
 
   const fetchGoods = async (eventId: string) => {
-    // イベント情報を取得
     const { data: eventData } = await supabase
       .from('events')
       .select('name')
@@ -34,7 +33,6 @@ export default function RegisterPage() {
       setEventName(eventData.name);
     }
 
-    // グッズ一覧を取得
     const { data, error } = await supabase
       .from('goods_master')
       .select('*')
@@ -52,30 +50,60 @@ export default function RegisterPage() {
   };
 
   const toggleHaveGood = (goodsId: string) => {
-    if (haveGoods.includes(goodsId)) {
-      setHaveGoods(haveGoods.filter(g => g !== goodsId));
-    } else {
-      setHaveGoods([...haveGoods, goodsId]);
-    }
+    setHaveGoods((prev) => {
+      if (prev[goodsId]) {
+        const { [goodsId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [goodsId]: 1 };
+    });
+  };
+
+  const adjustHaveQuantity = (goodsId: string, delta: number) => {
+    setHaveGoods((prev) => {
+      const current = prev[goodsId] || 0;
+      const next = current + delta;
+      if (next <= 0) {
+        const { [goodsId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [goodsId]: next };
+    });
   };
 
   const toggleWantGood = (goodsId: string) => {
-    if (wantGoods.includes(goodsId)) {
-      setWantGoods(wantGoods.filter(g => g !== goodsId));
-    } else {
-      setWantGoods([...wantGoods, goodsId]);
-    }
+    setWantGoods((prev) => {
+      if (prev[goodsId]) {
+        const { [goodsId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [goodsId]: 1 };
+    });
   };
 
+  const adjustWantQuantity = (goodsId: string, delta: number) => {
+    setWantGoods((prev) => {
+      const current = prev[goodsId] || 0;
+      const next = current + delta;
+      if (next <= 0) {
+        const { [goodsId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [goodsId]: next };
+    });
+  };
+
+  const haveCount = Object.values(haveGoods).reduce((sum, q) => sum + q, 0);
+  const wantCount = Object.values(wantGoods).reduce((sum, q) => sum + q, 0);
+
   const handleNext = () => {
-    if (haveGoods.length > 0 && wantGoods.length > 0) {
-      localStorage.setItem('haveGoodsIds', JSON.stringify(haveGoods));
-      localStorage.setItem('wantGoodsIds', JSON.stringify(wantGoods));
+    if (Object.keys(haveGoods).length > 0 && Object.keys(wantGoods).length > 0) {
+      localStorage.setItem('haveGoodsMap', JSON.stringify(haveGoods));
+      localStorage.setItem('wantGoodsMap', JSON.stringify(wantGoods));
       router.push('/matching');
     }
   };
 
-  // カテゴリーごとにグループ化
   const groupedGoods = goods.reduce((acc, good) => {
     const category = good.category || 'その他';
     if (!acc[category]) acc[category] = [];
@@ -91,6 +119,66 @@ export default function RegisterPage() {
     );
   }
 
+  const renderGoodsGrid = (
+    items: GoodsMaster[],
+    selectedMap: Record<string, number>,
+    toggleFn: (id: string) => void,
+    adjustFn: (id: string, delta: number) => void,
+    selectedBg: string,
+    selectedBorder: string,
+    hoverBorder: string,
+    buttonColor: string,
+  ) => (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {items.map((good) => {
+        const qty = selectedMap[good.id] || 0;
+        const isSelected = qty > 0;
+        return (
+          <div
+            key={good.id}
+            onClick={() => toggleFn(good.id)}
+            className={`p-3 rounded-xl border-2 transition-all cursor-pointer ${
+              isSelected
+                ? `${selectedBg} ${selectedBorder}`
+                : `bg-gray-50 border-gray-300 hover:${hoverBorder}`
+            }`}
+          >
+            {good.image_url && (
+              <div className="relative w-full h-24 mb-2">
+                <Image
+                  src={good.image_url}
+                  alt={good.name}
+                  fill
+                  className="object-cover rounded-lg"
+                />
+              </div>
+            )}
+            <p className="text-sm font-medium text-gray-800">
+              {good.name}
+            </p>
+            {isSelected && (
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); adjustFn(good.id, -1); }}
+                  className={`w-7 h-7 rounded-full ${buttonColor} text-white font-bold text-sm flex items-center justify-center`}
+                >
+                  -
+                </button>
+                <span className="text-sm font-bold w-6 text-center">{qty}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); adjustFn(good.id, 1); }}
+                  className={`w-7 h-7 rounded-full ${buttonColor} text-white font-bold text-sm flex items-center justify-center`}
+                >
+                  +
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-4">
       <div className="max-w-4xl mx-auto">
@@ -103,9 +191,9 @@ export default function RegisterPage() {
         {/* 持っているグッズ */}
         <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
           <h2 className="text-2xl font-bold text-purple-600 mb-4 flex items-center gap-2">
-            ✅ 持っているグッズ
+            持っているグッズ
             <span className="text-sm font-normal text-gray-500">
-              ({haveGoods.length}個選択中)
+              ({Object.keys(haveGoods).length}種類 / 合計{haveCount}個)
             </span>
           </h2>
 
@@ -114,33 +202,10 @@ export default function RegisterPage() {
               <h3 className="text-lg font-semibold text-gray-700 mb-3">
                 {category}
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {items.map((good) => (
-                  <button
-                    key={good.id}
-                    onClick={() => toggleHaveGood(good.id)}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      haveGoods.includes(good.id)
-                        ? 'bg-purple-100 border-purple-500'
-                        : 'bg-gray-50 border-gray-300 hover:border-purple-300'
-                    }`}
-                  >
-                    {good.image_url && (
-                      <div className="relative w-full h-24 mb-2">
-                        <Image
-                          src={good.image_url}
-                          alt={good.name}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
-                      </div>
-                    )}
-                    <p className="text-sm font-medium text-gray-800">
-                      {good.name}
-                    </p>
-                  </button>
-                ))}
-              </div>
+              {renderGoodsGrid(
+                items, haveGoods, toggleHaveGood, adjustHaveQuantity,
+                'bg-purple-100', 'border-purple-500', 'border-purple-300', 'bg-purple-500',
+              )}
             </div>
           ))}
         </div>
@@ -148,9 +213,9 @@ export default function RegisterPage() {
         {/* 欲しいグッズ */}
         <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
           <h2 className="text-2xl font-bold text-pink-600 mb-4 flex items-center gap-2">
-            ❤️ 欲しいグッズ
+            欲しいグッズ
             <span className="text-sm font-normal text-gray-500">
-              ({wantGoods.length}個選択中)
+              ({Object.keys(wantGoods).length}種類 / 合計{wantCount}個)
             </span>
           </h2>
 
@@ -159,33 +224,10 @@ export default function RegisterPage() {
               <h3 className="text-lg font-semibold text-gray-700 mb-3">
                 {category}
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {items.map((good) => (
-                  <button
-                    key={good.id}
-                    onClick={() => toggleWantGood(good.id)}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      wantGoods.includes(good.id)
-                        ? 'bg-pink-100 border-pink-500'
-                        : 'bg-gray-50 border-gray-300 hover:border-pink-300'
-                    }`}
-                  >
-                    {good.image_url && (
-                      <div className="relative w-full h-24 mb-2">
-                        <Image
-                          src={good.image_url}
-                          alt={good.name}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
-                      </div>
-                    )}
-                    <p className="text-sm font-medium text-gray-800">
-                      {good.name}
-                    </p>
-                  </button>
-                ))}
-              </div>
+              {renderGoodsGrid(
+                items, wantGoods, toggleWantGood, adjustWantQuantity,
+                'bg-pink-100', 'border-pink-500', 'border-pink-300', 'bg-pink-500',
+              )}
             </div>
           ))}
         </div>
@@ -199,17 +241,17 @@ export default function RegisterPage() {
             onClick={() => router.push('/request-goods')}
             className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
           >
-            📝 グッズを追加リクエスト
+            グッズを追加リクエスト
           </button>
         </div>
 
         {/* 次へボタン */}
         <button
           onClick={handleNext}
-          disabled={haveGoods.length === 0 || wantGoods.length === 0}
+          disabled={Object.keys(haveGoods).length === 0 || Object.keys(wantGoods).length === 0}
           className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
-          マッチング開始 →
+          マッチング開始
         </button>
       </div>
     </main>

@@ -5,12 +5,17 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+interface GoodsWithQuantity {
+  name: string;
+  quantity: number;
+}
+
 interface MatchResult {
   id: string;
   nickname: string;
   distance: number;
-  theyHave: string[];
-  youHave: string[];
+  theyHave: GoodsWithQuantity[];
+  youHave: GoodsWithQuantity[];
   colorCode: string;
 }
 
@@ -32,18 +37,21 @@ export default function MatchingPage() {
   const router = useRouter();
   const channelsRef = useRef<RealtimeChannel[]>([]);
   const matchingParamsRef = useRef<{
-    myHaveIds: string[];
-    myWantIds: string[];
+    myHaveMap: Record<string, number>;
+    myWantMap: Record<string, number>;
   } | null>(null);
 
   // Search-only: does NOT insert/delete user_goods (safe to call from realtime)
   const searchMatches = useCallback(async (
-    myHaveIds: string[],
-    myWantIds: string[],
+    myHaveMap: Record<string, number>,
+    myWantMap: Record<string, number>,
   ) => {
     try {
       const userId = localStorage.getItem('userId');
       if (!userId) return;
+
+      const myHaveIds = Object.keys(myHaveMap);
+      const myWantIds = Object.keys(myWantMap);
 
       const { data: otherUsers, error: matchError } = await supabase
         .from('users')
@@ -70,7 +78,7 @@ export default function MatchingPage() {
       for (const otherUser of otherUsers || []) {
         const { data: theirGoods } = await supabase
           .from('user_goods')
-          .select('goods_id, type')
+          .select('goods_id, type, quantity')
           .eq('user_id', otherUser.id);
 
         if (!theirGoods) continue;
@@ -81,6 +89,11 @@ export default function MatchingPage() {
         const theirWantIds = theirGoods
           .filter((g: { type: string }) => g.type === 'want')
           .map((g: { goods_id: string }) => g.goods_id);
+
+        const theirGoodsMap: Record<string, number> = {};
+        theirGoods.forEach((g: { goods_id: string; type: string; quantity: number }) => {
+          theirGoodsMap[`${g.type}_${g.goods_id}`] = g.quantity || 1;
+        });
 
         const theyHaveIWant = theirHaveIds.filter((id: string) =>
           myWantIds.includes(id)
@@ -94,8 +107,14 @@ export default function MatchingPage() {
             id: otherUser.id,
             nickname: otherUser.nickname,
             distance: 0,
-            theyHave: theyHaveIWant.map((id: string) => goodsNameMap[id] || id),
-            youHave: iHaveTheyWant.map((id) => goodsNameMap[id] || id),
+            theyHave: theyHaveIWant.map((id: string) => ({
+              name: goodsNameMap[id] || id,
+              quantity: theirGoodsMap[`have_${id}`] || 1,
+            })),
+            youHave: iHaveTheyWant.map((id) => ({
+              name: goodsNameMap[id] || id,
+              quantity: myHaveMap[id] || 1,
+            })),
             colorCode: COLOR_CODES[foundMatches.length % COLOR_CODES.length],
           });
         }
@@ -112,8 +131,8 @@ export default function MatchingPage() {
   // Initial registration + first search (called once)
   const registerAndMatch = useCallback(async (
     nickname: string,
-    myHaveIds: string[],
-    myWantIds: string[],
+    myHaveMap: Record<string, number>,
+    myWantMap: Record<string, number>,
     lat: number,
     lng: number
   ) => {
@@ -168,22 +187,24 @@ export default function MatchingPage() {
         .eq('user_id', userId);
 
       const userGoodsRows = [
-        ...myHaveIds.map((goodsId) => ({
+        ...Object.entries(myHaveMap).map(([goodsId, quantity]) => ({
           user_id: userId!,
           goods_id: goodsId,
           type: 'have' as const,
+          quantity,
         })),
-        ...myWantIds.map((goodsId) => ({
+        ...Object.entries(myWantMap).map(([goodsId, quantity]) => ({
           user_id: userId!,
           goods_id: goodsId,
           type: 'want' as const,
+          quantity,
         })),
       ];
 
       await supabase.from('user_goods').insert(userGoodsRows);
 
       // 4. Now search for matches
-      await searchMatches(myHaveIds, myWantIds);
+      await searchMatches(myHaveMap, myWantMap);
     } catch (err) {
       console.error('Registration error:', err);
       setIsSearching(false);
@@ -191,8 +212,8 @@ export default function MatchingPage() {
   }, [searchMatches]);
 
   useEffect(() => {
-    const haveData = localStorage.getItem('haveGoodsIds');
-    const wantData = localStorage.getItem('wantGoodsIds');
+    const haveData = localStorage.getItem('haveGoodsMap');
+    const wantData = localStorage.getItem('wantGoodsMap');
     const nickname = localStorage.getItem('nickname');
     const eventId = localStorage.getItem('selectedEventId');
 
@@ -201,13 +222,13 @@ export default function MatchingPage() {
       return;
     }
 
-    const myHaveIds: string[] = JSON.parse(haveData);
-    const myWantIds: string[] = JSON.parse(wantData);
-    matchingParamsRef.current = { myHaveIds, myWantIds };
+    const myHaveMap: Record<string, number> = JSON.parse(haveData);
+    const myWantMap: Record<string, number> = JSON.parse(wantData);
+    matchingParamsRef.current = { myHaveMap, myWantMap };
 
     const startMatching = (lat: number, lng: number) => {
       setLocationGranted(true);
-      registerAndMatch(nickname, myHaveIds, myWantIds, lat, lng);
+      registerAndMatch(nickname, myHaveMap, myWantMap, lat, lng);
     };
 
     if ('geolocation' in navigator) {
@@ -246,7 +267,7 @@ export default function MatchingPage() {
               const params = matchingParamsRef.current;
               if (params) {
                 console.log('[Realtime] Re-searching matches...');
-                searchMatches(params.myHaveIds, params.myWantIds);
+                searchMatches(params.myHaveMap, params.myWantMap);
               }
             }, 1000);
           }
@@ -475,16 +496,16 @@ export default function MatchingPage() {
                   <div className="bg-purple-50 rounded-xl p-3">
                     <p className="text-sm font-semibold text-purple-700 mb-2">相手が持っている</p>
                     <ul className="text-sm text-gray-700 space-y-1">
-                      {match.theyHave.map((item: string, idx: number) => (
-                        <li key={idx}>✓ {item}</li>
+                      {match.theyHave.map((item, idx) => (
+                        <li key={idx}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
                       ))}
                     </ul>
                   </div>
                   <div className="bg-pink-50 rounded-xl p-3">
                     <p className="text-sm font-semibold text-pink-700 mb-2">あなたが持っている</p>
                     <ul className="text-sm text-gray-700 space-y-1">
-                      {match.youHave.map((item: string, idx: number) => (
-                        <li key={idx}>✓ {item}</li>
+                      {match.youHave.map((item, idx) => (
+                        <li key={idx}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
                       ))}
                     </ul>
                   </div>
