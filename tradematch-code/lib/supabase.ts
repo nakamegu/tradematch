@@ -33,6 +33,7 @@ export type UserGoods = {
   goods_id: string
   type: 'have' | 'want'
   quantity: number
+  group_id: number
 }
 
 export type Match = {

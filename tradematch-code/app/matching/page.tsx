@@ -5,17 +5,29 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+interface TradeGroup {
+  have: Record<string, number>;
+  wantItems: string[];
+  wantQuantity: number;
+}
+
 interface GoodsWithQuantity {
   name: string;
   quantity: number;
+}
+
+interface GroupMatch {
+  theyOffer: GoodsWithQuantity[];
+  theyWantQty: number;
+  youOffer: GoodsWithQuantity[];
+  myWantQty: number;
 }
 
 interface MatchResult {
   id: string;
   nickname: string;
   distance: number;
-  theyHave: GoodsWithQuantity[];
-  youHave: GoodsWithQuantity[];
+  groupMatches: GroupMatch[];
   colorCode: string;
 }
 
@@ -36,22 +48,12 @@ export default function MatchingPage() {
   } | null>(null);
   const router = useRouter();
   const channelsRef = useRef<RealtimeChannel[]>([]);
-  const matchingParamsRef = useRef<{
-    myHaveMap: Record<string, number>;
-    myWantMap: Record<string, number>;
-  } | null>(null);
+  const tradeGroupsRef = useRef<TradeGroup[]>([]);
 
-  // Search-only: does NOT insert/delete user_goods (safe to call from realtime)
-  const searchMatches = useCallback(async (
-    myHaveMap: Record<string, number>,
-    myWantMap: Record<string, number>,
-  ) => {
+  const searchMatches = useCallback(async (myGroups: TradeGroup[]) => {
     try {
       const userId = localStorage.getItem('userId');
       if (!userId) return;
-
-      const myHaveIds = Object.keys(myHaveMap);
-      const myWantIds = Object.keys(myWantMap);
 
       const { data: otherUsers, error: matchError } = await supabase
         .from('users')
@@ -78,43 +80,66 @@ export default function MatchingPage() {
       for (const otherUser of otherUsers || []) {
         const { data: theirGoods } = await supabase
           .from('user_goods')
-          .select('goods_id, type, quantity')
+          .select('goods_id, type, quantity, group_id')
           .eq('user_id', otherUser.id);
 
         if (!theirGoods) continue;
 
-        const theirHaveIds = theirGoods
-          .filter((g: { type: string }) => g.type === 'have')
-          .map((g: { goods_id: string }) => g.goods_id);
-        const theirWantIds = theirGoods
-          .filter((g: { type: string }) => g.type === 'want')
-          .map((g: { goods_id: string }) => g.goods_id);
+        // Build their groups from DB rows
+        const theirGroupsMap = new Map<number, { have: Record<string, number>; wantItems: string[]; wantQuantity: number }>();
+        for (const row of theirGoods) {
+          const gid = row.group_id ?? 0;
+          if (!theirGroupsMap.has(gid)) {
+            theirGroupsMap.set(gid, { have: {}, wantItems: [], wantQuantity: 1 });
+          }
+          const g = theirGroupsMap.get(gid)!;
+          if (row.type === 'have') {
+            g.have[row.goods_id] = row.quantity || 1;
+          } else {
+            g.wantItems.push(row.goods_id);
+            g.wantQuantity = row.quantity || 1;
+          }
+        }
+        const theirGroups = Array.from(theirGroupsMap.values());
 
-        const theirGoodsMap: Record<string, number> = {};
-        theirGoods.forEach((g: { goods_id: string; type: string; quantity: number }) => {
-          theirGoodsMap[`${g.type}_${g.goods_id}`] = g.quantity || 1;
-        });
+        // Cross-match: my group X vs their group Y
+        const groupMatches: GroupMatch[] = [];
 
-        const theyHaveIWant = theirHaveIds.filter((id: string) =>
-          myWantIds.includes(id)
-        );
-        const iHaveTheyWant = myHaveIds.filter((id) =>
-          theirWantIds.includes(id)
-        );
+        for (const myGroup of myGroups) {
+          const myHaveIds = Object.keys(myGroup.have);
+          const myWantIds = myGroup.wantItems;
 
-        if (theyHaveIWant.length > 0 && iHaveTheyWant.length > 0) {
+          for (const theirGroup of theirGroups) {
+            const theirHaveIds = Object.keys(theirGroup.have);
+            const theirWantIds = theirGroup.wantItems;
+
+            // They have something I want AND I have something they want
+            const theyOfferIds = theirHaveIds.filter((id) => myWantIds.includes(id));
+            const youOfferIds = myHaveIds.filter((id) => theirWantIds.includes(id));
+
+            if (theyOfferIds.length > 0 && youOfferIds.length > 0) {
+              groupMatches.push({
+                theyOffer: theyOfferIds.map((id) => ({
+                  name: goodsNameMap[id] || id,
+                  quantity: theirGroup.have[id] || 1,
+                })),
+                theyWantQty: theirGroup.wantQuantity,
+                youOffer: youOfferIds.map((id) => ({
+                  name: goodsNameMap[id] || id,
+                  quantity: myGroup.have[id] || 1,
+                })),
+                myWantQty: myGroup.wantQuantity,
+              });
+            }
+          }
+        }
+
+        if (groupMatches.length > 0) {
           foundMatches.push({
             id: otherUser.id,
             nickname: otherUser.nickname,
             distance: 0,
-            theyHave: theyHaveIWant.map((id: string) => ({
-              name: goodsNameMap[id] || id,
-              quantity: theirGoodsMap[`have_${id}`] || 1,
-            })),
-            youHave: iHaveTheyWant.map((id) => ({
-              name: goodsNameMap[id] || id,
-              quantity: myHaveMap[id] || 1,
-            })),
+            groupMatches,
             colorCode: COLOR_CODES[foundMatches.length % COLOR_CODES.length],
           });
         }
@@ -128,16 +153,13 @@ export default function MatchingPage() {
     }
   }, []);
 
-  // Initial registration + first search (called once)
   const registerAndMatch = useCallback(async (
     nickname: string,
-    myHaveMap: Record<string, number>,
-    myWantMap: Record<string, number>,
+    myGroups: TradeGroup[],
     lat: number,
     lng: number
   ) => {
     try {
-      // 1. Create or update user
       let userId = localStorage.getItem('userId');
 
       if (userId) {
@@ -169,7 +191,6 @@ export default function MatchingPage() {
         localStorage.setItem('userId', userId!);
       }
 
-      // 2. Update user location if available
       if (lat !== 0 || lng !== 0) {
         await supabase.rpc('update_user_location', {
           user_id_input: userId,
@@ -180,31 +201,46 @@ export default function MatchingPage() {
         });
       }
 
-      // 3. Delete existing user_goods and re-insert
+      // Delete existing user_goods and re-insert with group_id
       await supabase
         .from('user_goods')
         .delete()
         .eq('user_id', userId);
 
-      const userGoodsRows = [
-        ...Object.entries(myHaveMap).map(([goodsId, quantity]) => ({
-          user_id: userId!,
-          goods_id: goodsId,
-          type: 'have' as const,
-          quantity,
-        })),
-        ...Object.entries(myWantMap).map(([goodsId, quantity]) => ({
-          user_id: userId!,
-          goods_id: goodsId,
-          type: 'want' as const,
-          quantity,
-        })),
-      ];
+      const userGoodsRows: {
+        user_id: string;
+        goods_id: string;
+        type: 'have' | 'want';
+        quantity: number;
+        group_id: number;
+      }[] = [];
+
+      myGroups.forEach((group, groupIdx) => {
+        // Have items
+        for (const [goodsId, quantity] of Object.entries(group.have)) {
+          userGoodsRows.push({
+            user_id: userId!,
+            goods_id: goodsId,
+            type: 'have',
+            quantity,
+            group_id: groupIdx,
+          });
+        }
+        // Want items — quantity stores the group's wantQuantity
+        for (const goodsId of group.wantItems) {
+          userGoodsRows.push({
+            user_id: userId!,
+            goods_id: goodsId,
+            type: 'want',
+            quantity: group.wantQuantity,
+            group_id: groupIdx,
+          });
+        }
+      });
 
       await supabase.from('user_goods').insert(userGoodsRows);
 
-      // 4. Now search for matches
-      await searchMatches(myHaveMap, myWantMap);
+      await searchMatches(myGroups);
     } catch (err) {
       console.error('Registration error:', err);
       setIsSearching(false);
@@ -212,23 +248,21 @@ export default function MatchingPage() {
   }, [searchMatches]);
 
   useEffect(() => {
-    const haveData = localStorage.getItem('haveGoodsMap');
-    const wantData = localStorage.getItem('wantGoodsMap');
+    const tradeGroupsData = localStorage.getItem('tradeGroups');
     const nickname = localStorage.getItem('nickname');
     const eventId = localStorage.getItem('selectedEventId');
 
-    if (!haveData || !wantData || !nickname || !eventId) {
+    if (!tradeGroupsData || !nickname || !eventId) {
       router.push('/register');
       return;
     }
 
-    const myHaveMap: Record<string, number> = JSON.parse(haveData);
-    const myWantMap: Record<string, number> = JSON.parse(wantData);
-    matchingParamsRef.current = { myHaveMap, myWantMap };
+    const myGroups: TradeGroup[] = JSON.parse(tradeGroupsData);
+    tradeGroupsRef.current = myGroups;
 
     const startMatching = (lat: number, lng: number) => {
       setLocationGranted(true);
-      registerAndMatch(nickname, myHaveMap, myWantMap, lat, lng);
+      registerAndMatch(nickname, myGroups, lat, lng);
     };
 
     if ('geolocation' in navigator) {
@@ -240,7 +274,6 @@ export default function MatchingPage() {
       startMatching(0, 0);
     }
 
-    // Subscribe to realtime channels after a short delay to avoid StrictMode race
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
 
@@ -256,18 +289,16 @@ export default function MatchingPage() {
           { event: 'INSERT', schema: 'public', table: 'user_goods' },
           (payload) => {
             console.log('[Realtime] user_goods INSERT received:', payload.new);
-            // Ignore own inserts to prevent loops
             const currentUserId = localStorage.getItem('userId');
             const inserted = payload.new as { user_id: string };
             if (inserted.user_id === currentUserId) return;
 
-            // Debounce: multiple rows are inserted at once
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-              const params = matchingParamsRef.current;
-              if (params) {
+              const groups = tradeGroupsRef.current;
+              if (groups.length > 0) {
                 console.log('[Realtime] Re-searching matches...');
-                searchMatches(params.myHaveMap, params.myWantMap);
+                searchMatches(groups);
               }
             }, 1000);
           }
@@ -313,7 +344,6 @@ export default function MatchingPage() {
       channelsRef.current = [userGoodsChannel, matchesChannel];
     };
 
-    // Delay channel setup slightly to let React StrictMode cleanup pass
     const setupTimer = setTimeout(setupChannels, 100);
 
     return () => {
@@ -332,7 +362,6 @@ export default function MatchingPage() {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
 
-    // Create a match record in the DB
     const { data: matchRecord, error } = await supabase
       .from('matches')
       .insert({
@@ -348,7 +377,6 @@ export default function MatchingPage() {
       console.error('Error creating match:', error);
     }
 
-    // Store match info for identify page
     localStorage.setItem('currentMatch', JSON.stringify({
       ...match,
       matchRecordId: matchRecord?.id || null,
@@ -359,22 +387,18 @@ export default function MatchingPage() {
   const handleAcceptRequest = async () => {
     if (!incomingRequest) return;
 
-    // Update match status to accepted
     await supabase
       .from('matches')
       .update({ status: 'accepted' })
       .eq('id', incomingRequest.matchRecordId);
 
-    // Find the requester in our matches list for goods info
     const matchInfo = matches.find((m) => m.id === incomingRequest.requesterId);
 
-    // Store match info for identify page (using the SAME matchRecordId)
     localStorage.setItem('currentMatch', JSON.stringify({
       id: incomingRequest.requesterId,
       nickname: incomingRequest.requesterName,
       distance: matchInfo?.distance || 0,
-      theyHave: matchInfo?.theyHave || [],
-      youHave: matchInfo?.youHave || [],
+      groupMatches: matchInfo?.groupMatches || [],
       colorCode: incomingRequest.colorCode || COLOR_CODES[0],
       matchRecordId: incomingRequest.matchRecordId,
     }));
@@ -492,23 +516,36 @@ export default function MatchingPage() {
                   ></div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-purple-50 rounded-xl p-3">
-                    <p className="text-sm font-semibold text-purple-700 mb-2">相手が持っている</p>
-                    <ul className="text-sm text-gray-700 space-y-1">
-                      {match.theyHave.map((item, idx) => (
-                        <li key={idx}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="bg-pink-50 rounded-xl p-3">
-                    <p className="text-sm font-semibold text-pink-700 mb-2">あなたが持っている</p>
-                    <ul className="text-sm text-gray-700 space-y-1">
-                      {match.youHave.map((item, idx) => (
-                        <li key={idx}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
-                      ))}
-                    </ul>
-                  </div>
+                {/* Group matches */}
+                <div className="space-y-3 mb-4">
+                  {match.groupMatches.map((gm, gmIdx) => (
+                    <div key={gmIdx} className="bg-gray-50 rounded-xl p-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-purple-50 rounded-lg p-2">
+                          <p className="text-xs font-semibold text-purple-700 mb-1">
+                            相手が出せる
+                            <span className="text-gray-500 font-normal"> (欲しい数:{gm.myWantQty})</span>
+                          </p>
+                          <ul className="text-xs text-gray-700 space-y-0.5">
+                            {gm.theyOffer.map((item, i) => (
+                              <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="bg-pink-50 rounded-lg p-2">
+                          <p className="text-xs font-semibold text-pink-700 mb-1">
+                            あなたが出せる
+                            <span className="text-gray-500 font-normal"> (相手の欲しい数:{gm.theyWantQty})</span>
+                          </p>
+                          <ul className="text-xs text-gray-700 space-y-0.5">
+                            {gm.youOffer.map((item, i) => (
+                              <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <button
