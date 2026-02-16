@@ -31,6 +31,20 @@ export default function RegisterPage() {
       router.push('/select-event');
       return;
     }
+
+    // Restore tradeGroups from localStorage if available
+    const saved = localStorage.getItem('tradeGroups');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as TradeGroup[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTradeGroups(parsed);
+        }
+      } catch {
+        // ignore parse errors, keep default
+      }
+    }
+
     fetchGoods(eventId);
   }, [router]);
 

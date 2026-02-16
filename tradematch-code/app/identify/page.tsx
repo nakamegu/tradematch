@@ -133,6 +133,55 @@ export default function IdentifyPage() {
     setTimeout(() => setIsFlashing(false), 1500);
   };
 
+  // Update tradeGroups in localStorage after trade completion
+  const updateTradeGroupsAfterTrade = () => {
+    const groupMatches = matchData?.groupMatches;
+    if (!groupMatches || groupMatches.length === 0) return;
+
+    const saved = localStorage.getItem('tradeGroups');
+    if (!saved) return;
+
+    try {
+      const tradeGroups = JSON.parse(saved);
+      if (!Array.isArray(tradeGroups)) return;
+
+      // Process each groupMatch: reduce have quantities and wantQuantity
+      for (const gm of groupMatches) {
+        const idx = gm.myGroupIdx;
+        if (idx == null || !tradeGroups[idx]) continue;
+        const group = tradeGroups[idx];
+
+        // Reduce have quantities by 1 for each youOffer item
+        for (const item of gm.youOffer || []) {
+          if (item.id && group.have[item.id]) {
+            group.have[item.id] -= 1;
+            if (group.have[item.id] <= 0) {
+              delete group.have[item.id];
+            }
+          }
+        }
+
+        // Reduce wantQuantity by 1
+        if (group.wantQuantity > 1) {
+          group.wantQuantity -= 1;
+        }
+      }
+
+      // Remove empty groups (no have items left)
+      const filtered = tradeGroups.filter(
+        (g: any) => Object.keys(g.have).length > 0 && g.wantItems.length > 0
+      );
+
+      if (filtered.length > 0) {
+        localStorage.setItem('tradeGroups', JSON.stringify(filtered));
+      } else {
+        localStorage.removeItem('tradeGroups');
+      }
+    } catch {
+      // ignore parse errors
+    }
+  };
+
   const handleComplete = async () => {
     const matchRecordId = matchData?.matchRecordId;
     if (matchRecordId) {
@@ -153,13 +202,20 @@ export default function IdentifyPage() {
         console.log('[Identify] Match updated successfully:', data);
         setMatchRecord(data as Match);
         setStatusLabel(getStatusLabel('completed'));
+        updateTradeGroupsAfterTrade();
       }
     }
   };
 
   const handleGoHome = () => {
     localStorage.removeItem('currentMatch');
+    localStorage.removeItem('tradeGroups');
     router.push('/');
+  };
+
+  const handleContinueTrade = () => {
+    localStorage.removeItem('currentMatch');
+    router.push('/register');
   };
 
   if (!matchData) {
@@ -242,9 +298,41 @@ export default function IdentifyPage() {
             <div className="w-full bg-green-100 text-green-800 py-3 rounded-full font-semibold mb-3">
               ✓ 交換完了済み
             </div>
+
+            {/* Trade summary */}
+            {matchData.groupMatches && matchData.groupMatches.length > 0 && (
+              <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-left">
+                <p className="text-sm font-bold text-gray-700 mb-2">交換内容</p>
+                {matchData.groupMatches.map((gm: any, i: number) => (
+                  <div key={i} className="mb-2 last:mb-0">
+                    <div className="flex gap-2 text-xs">
+                      <div className="flex-1 bg-purple-50 rounded-lg p-2">
+                        <p className="font-semibold text-purple-700 mb-1">渡したもの</p>
+                        {gm.youOffer?.map((item: any, j: number) => (
+                          <p key={j} className="text-gray-700">{item.name} ×1</p>
+                        ))}
+                      </div>
+                      <div className="flex-1 bg-pink-50 rounded-lg p-2">
+                        <p className="font-semibold text-pink-700 mb-1">もらったもの</p>
+                        {gm.theyOffer?.map((item: any, j: number) => (
+                          <p key={j} className="text-gray-700">{item.name} ×1</p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={handleContinueTrade}
+              className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-full font-semibold hover:shadow-xl transition-all mb-3"
+            >
+              続きの交換へ
+            </button>
             <button
               onClick={handleGoHome}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-full font-semibold hover:shadow-xl transition-all mb-3"
+              className="w-full bg-gray-400 text-white py-3 rounded-full font-semibold hover:bg-gray-500 transition-colors mb-3"
             >
               トップに戻る
             </button>

@@ -12,11 +12,13 @@ interface TradeGroup {
 }
 
 interface GoodsWithQuantity {
+  id: string;
   name: string;
   quantity: number;
 }
 
 interface GroupMatch {
+  myGroupIdx: number;
   theyOffer: GoodsWithQuantity[];
   theyWantQty: number;
   youOffer: GoodsWithQuantity[];
@@ -105,7 +107,8 @@ export default function MatchingPage() {
         // Cross-match: my group X vs their group Y
         const groupMatches: GroupMatch[] = [];
 
-        for (const myGroup of myGroups) {
+        for (let mgIdx = 0; mgIdx < myGroups.length; mgIdx++) {
+          const myGroup = myGroups[mgIdx];
           const myHaveIds = Object.keys(myGroup.have);
           const myWantIds = myGroup.wantItems;
 
@@ -119,12 +122,15 @@ export default function MatchingPage() {
 
             if (theyOfferIds.length > 0 && youOfferIds.length > 0) {
               groupMatches.push({
+                myGroupIdx: mgIdx,
                 theyOffer: theyOfferIds.map((id) => ({
+                  id,
                   name: goodsNameMap[id] || id,
                   quantity: theirGroup.have[id] || 1,
                 })),
                 theyWantQty: theirGroup.wantQuantity,
                 youOffer: youOfferIds.map((id) => ({
+                  id,
                   name: goodsNameMap[id] || id,
                   quantity: myGroup.have[id] || 1,
                 })),
