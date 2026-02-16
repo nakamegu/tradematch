@@ -574,7 +574,68 @@ export async function uploadGoodsImage(file: File): Promise<string | null> {
 
 ---
 
-## 🚀 Step 6: デプロイ前のチェックリスト
+## 🔐 Step 6: 管理者ダッシュボード（Supabase Auth）
+
+### 6-1. Supabase Auth の設定
+
+1. Supabaseダッシュボード → **Authentication** → **Settings** → **Email Auth** が有効であることを確認
+2. **Authentication** → **Users** → 「Add User」 → 管理者のメールアドレスとパスワードを入力して作成
+3. `.env.local` に管理者メールアドレスを追加：
+
+```env
+NEXT_PUBLIC_ADMIN_EMAIL=your-admin-email@example.com
+```
+
+### 6-2. RLSポリシーの追加（管理者用）
+
+SQL Editorで以下を実行して、認証ユーザーにイベント・グッズの管理権限を付与：
+
+```sql
+-- events テーブル: 認証ユーザーにINSERT/UPDATE許可
+CREATE POLICY "Authenticated users can insert events" ON events
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can update events" ON events
+  FOR UPDATE USING (auth.role() = 'authenticated');
+
+-- goods_master テーブル: 認証ユーザーにINSERT/UPDATE/DELETE許可
+CREATE POLICY "Authenticated users can insert goods_master" ON goods_master
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can update goods_master" ON goods_master
+  FOR UPDATE USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can delete goods_master" ON goods_master
+  FOR DELETE USING (auth.role() = 'authenticated');
+```
+
+### 6-3. ストレージポリシーの更新
+
+管理画面から画像をアップロードするために、認証ユーザーへのアップロード許可が必要です。
+Step 5-2で設定済みの場合は不要です。未設定の場合はSQL Editorで以下を実行：
+
+```sql
+-- 匿名ユーザーでもアップロード可能にする（MVPの場合）
+CREATE POLICY "Anyone can upload goods images"
+ON storage.objects FOR INSERT
+WITH CHECK ( bucket_id = 'goods-images' );
+```
+
+### 6-4. 管理画面のアクセス方法
+
+1. `/admin/login` にアクセス
+2. Step 6-1 で作成した管理者ユーザーのメール・パスワードでログイン
+3. ダッシュボードからイベント管理・グッズ管理が可能
+
+### 6-5. 管理画面の機能
+
+- **ダッシュボード** (`/admin`): イベント数・グッズ数・ユーザー数のサマリー
+- **イベント管理** (`/admin/events`): イベントの作成・編集・有効/無効切り替え
+- **グッズ管理** (`/admin/goods`): グッズの個別作成・一括登録・編集・削除・画像アップロード
+
+---
+
+## 🚀 Step 7: デプロイ前のチェックリスト
 
 - [ ] `.env.local` が `.gitignore` に含まれている
 - [ ] Supabaseの環境変数がVercelに設定されている

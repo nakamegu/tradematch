@@ -44,3 +44,15 @@ export type Match = {
   matched_at: string
   completed_at: string | null
 }
+
+export type GoodsRequest = {
+  id: string
+  user_id: string
+  event_id: string
+  goods_name: string
+  category: string
+  description?: string
+  image_url?: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}
