@@ -26,6 +26,12 @@ export default function RegisterPage() {
   const router = useRouter();
 
   useEffect(() => {
+    const nickname = localStorage.getItem('nickname');
+    if (!nickname || !nickname.trim()) {
+      router.push('/');
+      return;
+    }
+
     const eventId = localStorage.getItem('selectedEventId');
     if (!eventId) {
       router.push('/select-event');
