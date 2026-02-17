@@ -377,17 +377,19 @@ export default function RegisterPage() {
         </button>
 
         {/* グッズリクエストボタン */}
-        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
-          <p className="text-gray-700 mb-3">
-            探しているグッズが見つかりませんか？
-          </p>
-          <button
-            onClick={() => router.push('/request-goods')}
-            className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-          >
-            グッズを追加リクエスト
-          </button>
-        </div>
+        {eventData?.allow_goods_request !== false && (
+          <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
+            <p className="text-gray-700 mb-3">
+              探しているグッズが見つかりませんか？
+            </p>
+            <button
+              onClick={() => router.push('/request-goods')}
+              className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+            >
+              グッズを追加リクエスト
+            </button>
+          </div>
+        )}
 
         {/* 登録期間外メッセージ */}
         {!isRegisterOpen && (

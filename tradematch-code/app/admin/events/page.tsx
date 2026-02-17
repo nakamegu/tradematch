@@ -22,6 +22,7 @@ type EventForm = {
   register_end: string
   trade_start: string
   trade_end: string
+  allow_goods_request: boolean
   locations: [LocationForm, LocationForm, LocationForm]
 }
 
@@ -35,6 +36,7 @@ const emptyForm: EventForm = {
   register_end: '',
   trade_start: '',
   trade_end: '',
+  allow_goods_request: true,
   locations: [{ ...emptyLocation }, { ...emptyLocation }, { ...emptyLocation }],
 }
 
@@ -108,6 +110,7 @@ export default function EventsManagementPage() {
       register_end: localToISO(form.register_end),
       trade_start: localToISO(form.trade_start),
       trade_end: localToISO(form.trade_end),
+      allow_goods_request: form.allow_goods_request,
       latitude: loc1.latitude ? parseFloat(loc1.latitude) : null,
       longitude: loc1.longitude ? parseFloat(loc1.longitude) : null,
       radius_km: loc1.radius_km ? parseFloat(loc1.radius_km) : 1.0,
@@ -160,6 +163,7 @@ export default function EventsManagementPage() {
       register_end: isoToLocal(event.register_end),
       trade_start: isoToLocal(event.trade_start),
       trade_end: isoToLocal(event.trade_end),
+      allow_goods_request: event.allow_goods_request !== false,
       locations: [
         {
           latitude: event.latitude != null ? String(event.latitude) : '',
@@ -383,12 +387,22 @@ export default function EventsManagementPage() {
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
+              id="allow_goods_request"
+              checked={form.allow_goods_request}
+              onChange={(e) => setForm({ ...form, allow_goods_request: e.target.checked })}
+              className="rounded"
+            />
+            <label htmlFor="allow_goods_request" className="text-sm text-gray-700">グッズ追加リクエストを許可</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
               id="is_active"
               checked={form.is_active}
               onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
               className="rounded"
             />
-            <label htmlFor="is_active" className="text-sm text-gray-700">有効にする</label>
+            <label htmlFor="is_active" className="text-sm text-gray-700">イベントを有効にする</label>
           </div>
           <div className="flex gap-2">
             <button
