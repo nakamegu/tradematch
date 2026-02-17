@@ -23,6 +23,10 @@ export type Event = {
   latitude3?: number
   longitude3?: number
   radius_km3?: number
+  register_start?: string
+  register_end?: string
+  trade_start?: string
+  trade_end?: string
 }
 
 export type GoodsMaster = {

@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, Event } from '@/lib/supabase';
 
+function isInPeriod(now: string, start?: string, end?: string): boolean {
+  if (!start && !end) return false; // no period configured = not "in" this period
+  if (start && now < start) return false;
+  if (end && now > end) return false;
+  return true;
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 export default function SelectEventPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +34,15 @@ export default function SelectEventPage() {
     if (error) {
       console.error('Error fetching events:', error);
     } else {
-      setEvents(data || []);
+      const now = new Date().toISOString();
+      const filtered = (data || []).filter((e: Event) => {
+        const inRegister = isInPeriod(now, e.register_start, e.register_end);
+        const inTrade = isInPeriod(now, e.trade_start, e.trade_end);
+        // Show if in either period, or if neither period is configured
+        const hasAnyPeriod = e.register_start || e.register_end || e.trade_start || e.trade_end;
+        return !hasAnyPeriod || inRegister || inTrade;
+      });
+      setEvents(filtered);
     }
     setLoading(false);
   };
@@ -74,6 +93,20 @@ export default function SelectEventPage() {
               {event.venue && (
                 <p className="text-gray-600 text-sm">
                   📍 {event.venue}
+                </p>
+              )}
+              {(event.register_start || event.register_end) && (
+                <p className="text-gray-500 text-xs mt-1">
+                  📝 登録: {event.register_start ? formatDateTime(event.register_start) : ''}
+                  {event.register_start && event.register_end ? ' 〜 ' : ''}
+                  {event.register_end ? formatDateTime(event.register_end) : ''}
+                </p>
+              )}
+              {(event.trade_start || event.trade_end) && (
+                <p className="text-gray-500 text-xs mt-1">
+                  🔄 交換: {event.trade_start ? formatDateTime(event.trade_start) : ''}
+                  {event.trade_start && event.trade_end ? ' 〜 ' : ''}
+                  {event.trade_end ? formatDateTime(event.trade_end) : ''}
                 </p>
               )}
             </button>

@@ -18,6 +18,10 @@ type EventForm = {
   event_date: string
   venue: string
   is_active: boolean
+  register_start: string
+  register_end: string
+  trade_start: string
+  trade_end: string
   locations: [LocationForm, LocationForm, LocationForm]
 }
 
@@ -27,7 +31,26 @@ const emptyForm: EventForm = {
   event_date: '',
   venue: '',
   is_active: true,
+  register_start: '',
+  register_end: '',
+  trade_start: '',
+  trade_end: '',
   locations: [{ ...emptyLocation }, { ...emptyLocation }, { ...emptyLocation }],
+}
+
+// datetime-local value ("2026-02-17T20:30") → ISO string with local timezone offset
+function localToISO(value: string): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return d.toISOString();
+}
+
+// ISO/UTC string from DB → datetime-local value in local timezone
+function isoToLocal(value?: string): string {
+  if (!value) return '';
+  const d = new Date(value);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function EventsManagementPage() {
@@ -81,6 +104,10 @@ export default function EventsManagementPage() {
       event_date: form.event_date,
       venue: form.venue,
       is_active: form.is_active,
+      register_start: localToISO(form.register_start),
+      register_end: localToISO(form.register_end),
+      trade_start: localToISO(form.trade_start),
+      trade_end: localToISO(form.trade_end),
       latitude: loc1.latitude ? parseFloat(loc1.latitude) : null,
       longitude: loc1.longitude ? parseFloat(loc1.longitude) : null,
       radius_km: loc1.radius_km ? parseFloat(loc1.radius_km) : 1.0,
@@ -129,6 +156,10 @@ export default function EventsManagementPage() {
       event_date: event.event_date,
       venue: event.venue || '',
       is_active: event.is_active,
+      register_start: isoToLocal(event.register_start),
+      register_end: isoToLocal(event.register_end),
+      trade_start: isoToLocal(event.trade_start),
+      trade_end: isoToLocal(event.trade_end),
       locations: [
         {
           latitude: event.latitude != null ? String(event.latitude) : '',
@@ -229,6 +260,56 @@ export default function EventsManagementPage() {
               />
             </div>
           </div>
+
+          {/* 登録可能期間 */}
+          <fieldset className="border border-gray-200 rounded-lg p-4">
+            <legend className="text-sm font-semibold text-gray-700 px-1">アイテム登録可能期間</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">開始日時</label>
+                <input
+                  type="datetime-local"
+                  value={form.register_start}
+                  onChange={(e) => setForm({ ...form, register_start: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">終了日時</label>
+                <input
+                  type="datetime-local"
+                  value={form.register_end}
+                  onChange={(e) => setForm({ ...form, register_end: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* 交換可能期間 */}
+          <fieldset className="border border-gray-200 rounded-lg p-4">
+            <legend className="text-sm font-semibold text-gray-700 px-1">交換可能期間</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">開始日時</label>
+                <input
+                  type="datetime-local"
+                  value={form.trade_start}
+                  onChange={(e) => setForm({ ...form, trade_start: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">終了日時</label>
+                <input
+                  type="datetime-local"
+                  value={form.trade_end}
+                  onChange={(e) => setForm({ ...form, trade_end: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </fieldset>
 
           {/* 会場エリア1〜3 */}
           <div className="space-y-4">

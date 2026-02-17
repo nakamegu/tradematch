@@ -277,14 +277,22 @@ export default function MatchingPage() {
       return;
     }
 
-    // Fetch event data for area restriction
+    // Fetch event data for area restriction + trade period check
     supabase
       .from('events')
       .select('*')
       .eq('id', eventId)
       .single()
       .then(({ data }) => {
-        if (data) setEventData(data as Event);
+        if (data) {
+          setEventData(data as Event);
+          const ev = data as Event;
+          const now = new Date().toISOString();
+          if ((ev.trade_start && now < ev.trade_start) || (ev.trade_end && now > ev.trade_end)) {
+            router.push('/register');
+            return;
+          }
+        }
       });
 
     const myGroups: TradeGroup[] = JSON.parse(tradeGroupsData);

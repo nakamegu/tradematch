@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, GoodsMaster } from '@/lib/supabase';
+import { supabase, GoodsMaster, Event } from '@/lib/supabase';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import Image from 'next/image';
 
@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [tradeGroups, setTradeGroups] = useState<TradeGroup[]>([emptyGroup()]);
   const [loading, setLoading] = useState(true);
   const [eventName, setEventName] = useState('');
+  const [eventData, setEventData] = useState<Event | null>(null);
   const [expandedGroup, setExpandedGroup] = useState(0);
   const router = useRouter();
   const { showDeleteConfirm, setShowDeleteConfirm, deleting, handleDeleteAllData } = useDeleteAccount();
@@ -57,14 +58,15 @@ export default function RegisterPage() {
   }, [router]);
 
   const fetchGoods = async (eventId: string) => {
-    const { data: eventData } = await supabase
+    const { data: evData } = await supabase
       .from('events')
-      .select('name')
+      .select('*')
       .eq('id', eventId)
       .single();
 
-    if (eventData) {
-      setEventName(eventData.name);
+    if (evData) {
+      setEventName(evData.name);
+      setEventData(evData as Event);
     }
 
     const { data, error } = await supabase
@@ -142,6 +144,16 @@ export default function RegisterPage() {
   const isValid = tradeGroups.every(
     (g) => Object.keys(g.have).length > 0 && g.wantItems.length > 0
   );
+
+  const now = new Date().toISOString();
+  const isRegisterOpen = !eventData?.register_start && !eventData?.register_end
+    ? true
+    : ((!eventData?.register_start || now >= eventData.register_start) &&
+       (!eventData?.register_end || now <= eventData.register_end));
+  const isTradeOpen = !eventData?.trade_start && !eventData?.trade_end
+    ? true
+    : ((!eventData?.trade_start || now >= eventData.trade_start) &&
+       (!eventData?.trade_end || now <= eventData.trade_end));
 
   const handleNext = () => {
     if (!isValid) return;
@@ -377,14 +389,39 @@ export default function RegisterPage() {
           </button>
         </div>
 
+        {/* 登録期間外メッセージ */}
+        {!isRegisterOpen && (
+          <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-4 mb-2 text-center">
+            <p className="text-sm text-yellow-800 font-semibold">
+              現在はアイテム登録期間外です
+            </p>
+            {eventData?.register_start && now < eventData.register_start && (
+              <p className="text-xs text-yellow-700 mt-1">
+                登録開始: {new Date(eventData.register_start).toLocaleString('ja-JP')}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* 次へボタン */}
-        <button
-          onClick={handleNext}
-          disabled={!isValid}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          マッチング開始
-        </button>
+        {isTradeOpen ? (
+          <button
+            onClick={handleNext}
+            disabled={!isValid || !isRegisterOpen}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            マッチング開始
+          </button>
+        ) : (
+          <div className="w-full bg-gray-300 text-gray-500 py-4 rounded-xl font-bold text-lg text-center">
+            交換可能期間外です
+            {eventData?.trade_start && now < eventData.trade_start && (
+              <p className="text-xs font-normal mt-1">
+                開始: {new Date(eventData.trade_start).toLocaleString('ja-JP')}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 text-center">
           {!showDeleteConfirm ? (
