@@ -2,6 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { supabase, Event } from '@/lib/supabase'
+import LocationPickerMapWrapper from '@/components/LocationPickerMapWrapper'
+
+type LocationForm = {
+  latitude: string
+  longitude: string
+  radius_km: string
+}
+
+const emptyLocation: LocationForm = { latitude: '', longitude: '', radius_km: '1.0' }
 
 type EventForm = {
   name: string
@@ -9,6 +18,7 @@ type EventForm = {
   event_date: string
   venue: string
   is_active: boolean
+  locations: [LocationForm, LocationForm, LocationForm]
 }
 
 const emptyForm: EventForm = {
@@ -17,6 +27,7 @@ const emptyForm: EventForm = {
   event_date: '',
   venue: '',
   is_active: true,
+  locations: [{ ...emptyLocation }, { ...emptyLocation }, { ...emptyLocation }],
 }
 
 export default function EventsManagementPage() {
@@ -45,15 +56,46 @@ export default function EventsManagementPage() {
     fetchEvents()
   }, [])
 
+  const updateLocation = (index: number, update: Partial<LocationForm>) => {
+    setForm(prev => {
+      const locations = [...prev.locations] as [LocationForm, LocationForm, LocationForm]
+      locations[index] = { ...locations[index], ...update }
+      return { ...prev, locations }
+    })
+  }
+
+  const clearLocation = (index: number) => {
+    updateLocation(index, { latitude: '', longitude: '', radius_km: '1.0' })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
 
+    const [loc1, loc2, loc3] = form.locations
+
+    const payload: Record<string, unknown> = {
+      name: form.name,
+      artist_name: form.artist_name,
+      event_date: form.event_date,
+      venue: form.venue,
+      is_active: form.is_active,
+      latitude: loc1.latitude ? parseFloat(loc1.latitude) : null,
+      longitude: loc1.longitude ? parseFloat(loc1.longitude) : null,
+      radius_km: loc1.radius_km ? parseFloat(loc1.radius_km) : 1.0,
+      latitude2: loc2.latitude ? parseFloat(loc2.latitude) : null,
+      longitude2: loc2.longitude ? parseFloat(loc2.longitude) : null,
+      radius_km2: loc2.radius_km ? parseFloat(loc2.radius_km) : 1.0,
+      latitude3: loc3.latitude ? parseFloat(loc3.latitude) : null,
+      longitude3: loc3.longitude ? parseFloat(loc3.longitude) : null,
+      radius_km3: loc3.radius_km ? parseFloat(loc3.radius_km) : 1.0,
+    }
+
     if (editingId) {
       const { error } = await supabase
         .from('events')
-        .update(form)
+        .update(payload)
         .eq('id', editingId)
 
       if (error) {
@@ -64,7 +106,7 @@ export default function EventsManagementPage() {
     } else {
       const { error } = await supabase
         .from('events')
-        .insert(form)
+        .insert(payload)
 
       if (error) {
         setError('作成に失敗しました: ' + error.message)
@@ -87,6 +129,23 @@ export default function EventsManagementPage() {
       event_date: event.event_date,
       venue: event.venue || '',
       is_active: event.is_active,
+      locations: [
+        {
+          latitude: event.latitude != null ? String(event.latitude) : '',
+          longitude: event.longitude != null ? String(event.longitude) : '',
+          radius_km: event.radius_km != null ? String(event.radius_km) : '1.0',
+        },
+        {
+          latitude: event.latitude2 != null ? String(event.latitude2) : '',
+          longitude: event.longitude2 != null ? String(event.longitude2) : '',
+          radius_km: event.radius_km2 != null ? String(event.radius_km2) : '1.0',
+        },
+        {
+          latitude: event.latitude3 != null ? String(event.latitude3) : '',
+          longitude: event.longitude3 != null ? String(event.longitude3) : '',
+          radius_km: event.radius_km3 != null ? String(event.radius_km3) : '1.0',
+        },
+      ],
     })
   }
 
@@ -107,6 +166,8 @@ export default function EventsManagementPage() {
     }
     fetchEvents()
   }
+
+  const locationLabels = ['会場エリア1', '会場エリア2', '会場エリア3']
 
   return (
     <div>
@@ -168,6 +229,76 @@ export default function EventsManagementPage() {
               />
             </div>
           </div>
+
+          {/* 会場エリア1〜3 */}
+          <div className="space-y-4">
+            {form.locations.map((loc, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">{locationLabels[i]}</h3>
+                  {(loc.latitude || loc.longitude) && (
+                    <button
+                      type="button"
+                      onClick={() => clearLocation(i)}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      クリア
+                    </button>
+                  )}
+                </div>
+                <div className="mb-3">
+                  <LocationPickerMapWrapper
+                    lat={loc.latitude ? parseFloat(loc.latitude) : undefined}
+                    lng={loc.longitude ? parseFloat(loc.longitude) : undefined}
+                    radiusKm={loc.radius_km ? parseFloat(loc.radius_km) : undefined}
+                    onChange={(lat, lng) => {
+                      updateLocation(i, {
+                        latitude: String(lat),
+                        longitude: String(lng),
+                      })
+                    }}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">緯度</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={loc.latitude}
+                      onChange={(e) => updateLocation(i, { latitude: e.target.value })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="35.7056"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">経度</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={loc.longitude}
+                      onChange={(e) => updateLocation(i, { longitude: e.target.value })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="139.7519"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">半径 (km)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={loc.radius_km}
+                      onChange={(e) => updateLocation(i, { radius_km: e.target.value })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="1.0"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"

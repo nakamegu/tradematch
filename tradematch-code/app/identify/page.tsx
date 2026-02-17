@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import type { Match } from '@/lib/supabase';
+import type { Match, Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
+import { isWithinEventArea } from '@/lib/geo';
 
 export default function IdentifyPage() {
   const [matchData, setMatchData] = useState<any>(null);
@@ -13,6 +14,7 @@ export default function IdentifyPage() {
   const [isFlashing, setIsFlashing] = useState(false);
   const [statusLabel, setStatusLabel] = useState<string>('');
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
+  const [isInArea, setIsInArea] = useState(true);
   // tradedQty: key = "groupIdx-give-itemIdx" or "groupIdx-get-itemIdx", value = quantity
   const [tradedQty, setTradedQty] = useState<Record<string, number>>({});
   const [qtyConfirmed, setQtyConfirmed] = useState(false);
@@ -67,10 +69,24 @@ export default function IdentifyPage() {
     const parsed = JSON.parse(data);
     setMatchData(parsed);
 
-    // Get own location for map
+    // Get own location for map + area check
+    const eventId = localStorage.getItem('selectedEventId');
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        async (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setMyLocation(loc);
+          if (eventId) {
+            const { data: ev } = await supabase
+              .from('events')
+              .select('*')
+              .eq('id', eventId)
+              .single();
+            if (ev) {
+              setIsInArea(isWithinEventArea(loc.lat, loc.lng, ev as Event));
+            }
+          }
+        },
         () => {} // ignore error
       );
     }
@@ -316,8 +332,8 @@ export default function IdentifyPage() {
           </p>
         </div>
 
-        {/* Map */}
-        {myLocation.lat !== 0 && matchData.lat !== 0 && (
+        {/* Map (hidden outside event area) */}
+        {isInArea && myLocation.lat !== 0 && matchData.lat !== 0 && (
           <div className="mb-6" style={{ height: '180px' }}>
             <TradeMapWrapper
               myLat={myLocation.lat}

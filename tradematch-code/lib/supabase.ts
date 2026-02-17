@@ -14,6 +14,15 @@ export type Event = {
   venue?: string
   image_url?: string
   is_active: boolean
+  latitude?: number
+  longitude?: number
+  radius_km?: number
+  latitude2?: number
+  longitude2?: number
+  radius_km2?: number
+  latitude3?: number
+  longitude3?: number
+  radius_km3?: number
 }
 
 export type GoodsMaster = {

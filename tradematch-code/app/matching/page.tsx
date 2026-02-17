@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import type { Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
+import { isWithinEventArea } from '@/lib/geo';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -55,6 +57,8 @@ export default function MatchingPage() {
   const channelsRef = useRef<RealtimeChannel[]>([]);
   const tradeGroupsRef = useRef<TradeGroup[]>([]);
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
+  const [eventData, setEventData] = useState<Event | null>(null);
+  const [isInArea, setIsInArea] = useState(true);
 
   const searchMatches = useCallback(async (myGroups: TradeGroup[]) => {
     try {
@@ -271,6 +275,16 @@ export default function MatchingPage() {
       return;
     }
 
+    // Fetch event data for area restriction
+    supabase
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
+      .single()
+      .then(({ data }) => {
+        if (data) setEventData(data as Event);
+      });
+
     const myGroups: TradeGroup[] = JSON.parse(tradeGroupsData);
     tradeGroupsRef.current = myGroups;
 
@@ -368,6 +382,12 @@ export default function MatchingPage() {
       channelsRef.current = [];
     };
   }, [router, registerAndMatch, searchMatches]);
+
+  useEffect(() => {
+    if (eventData && myLocation.lat !== 0) {
+      setIsInArea(isWithinEventArea(myLocation.lat, myLocation.lng, eventData));
+    }
+  }, [myLocation, eventData]);
 
   const handleMatch = async (matchUserId: string) => {
     const match = matches.find((m) => m.id === matchUserId);
@@ -566,7 +586,7 @@ export default function MatchingPage() {
                   ))}
                 </div>
 
-                {myLocation.lat !== 0 && match.lat !== 0 && (
+                {isInArea && myLocation.lat !== 0 && match.lat !== 0 && (
                   <div className="mb-4" style={{ height: '150px' }}>
                     <TradeMapWrapper
                       myLat={myLocation.lat}
@@ -578,12 +598,18 @@ export default function MatchingPage() {
                   </div>
                 )}
 
-                <button
-                  onClick={() => handleMatch(match.id)}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-                >
-                  この人と交換する →
-                </button>
+                {isInArea ? (
+                  <button
+                    onClick={() => handleMatch(match.id)}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                  >
+                    この人と交換する →
+                  </button>
+                ) : (
+                  <div className="w-full bg-gray-300 text-gray-500 py-3 rounded-xl font-bold text-center">
+                    会場エリア外のため交換できません
+                  </div>
+                )}
               </div>
             ))}
           </div>
