@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Match } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import TradeMapWrapper from '@/components/TradeMapWrapper';
 
 export default function IdentifyPage() {
   const [matchData, setMatchData] = useState<any>(null);
   const [matchRecord, setMatchRecord] = useState<Match | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
   const [statusLabel, setStatusLabel] = useState<string>('');
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const router = useRouter();
   const channelRef = useRef<RealtimeChannel | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -61,6 +63,14 @@ export default function IdentifyPage() {
 
     const parsed = JSON.parse(data);
     setMatchData(parsed);
+
+    // Get own location for map
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {} // ignore error
+      );
+    }
 
     const matchRecordId = parsed.matchRecordId;
     if (!matchRecordId) return;
@@ -269,6 +279,19 @@ export default function IdentifyPage() {
             {matchData.colorCode}
           </p>
         </div>
+
+        {/* Map */}
+        {myLocation.lat !== 0 && matchData.lat !== 0 && (
+          <div className="mb-6" style={{ height: '180px' }}>
+            <TradeMapWrapper
+              myLat={myLocation.lat}
+              myLng={myLocation.lng}
+              otherLat={matchData.lat}
+              otherLng={matchData.lng}
+              otherName={matchData.nickname}
+            />
+          </div>
+        )}
 
         {/* Instructions */}
         <div className="bg-blue-50 rounded-xl p-4 mb-6">

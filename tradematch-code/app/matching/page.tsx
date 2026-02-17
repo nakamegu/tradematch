@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import TradeMapWrapper from '@/components/TradeMapWrapper';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -31,6 +32,8 @@ interface MatchResult {
   distance: number;
   groupMatches: GroupMatch[];
   colorCode: string;
+  lat: number;
+  lng: number;
 }
 
 const COLOR_CODES = [
@@ -51,6 +54,7 @@ export default function MatchingPage() {
   const router = useRouter();
   const channelsRef = useRef<RealtimeChannel[]>([]);
   const tradeGroupsRef = useRef<TradeGroup[]>([]);
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
 
   const searchMatches = useCallback(async (myGroups: TradeGroup[]) => {
     try {
@@ -59,7 +63,7 @@ export default function MatchingPage() {
 
       const { data: otherUsers, error: matchError } = await supabase
         .from('users')
-        .select('id, nickname')
+        .select('id, nickname, latitude, longitude')
         .eq('is_active', true)
         .neq('id', userId);
 
@@ -147,6 +151,8 @@ export default function MatchingPage() {
             distance: 0,
             groupMatches,
             colorCode: COLOR_CODES[foundMatches.length % COLOR_CODES.length],
+            lat: otherUser.latitude || 0,
+            lng: otherUser.longitude || 0,
           });
         }
       }
@@ -196,6 +202,8 @@ export default function MatchingPage() {
         userId = newUser.id;
         localStorage.setItem('userId', userId!);
       }
+
+      setMyLocation({ lat, lng });
 
       if (lat !== 0 || lng !== 0) {
         await supabase.rpc('update_user_location', {
@@ -386,6 +394,8 @@ export default function MatchingPage() {
     localStorage.setItem('currentMatch', JSON.stringify({
       ...match,
       matchRecordId: matchRecord?.id || null,
+      lat: match.lat,
+      lng: match.lng,
     }));
     router.push('/identify');
   };
@@ -407,6 +417,8 @@ export default function MatchingPage() {
       groupMatches: matchInfo?.groupMatches || [],
       colorCode: incomingRequest.colorCode || COLOR_CODES[0],
       matchRecordId: incomingRequest.matchRecordId,
+      lat: matchInfo?.lat || 0,
+      lng: matchInfo?.lng || 0,
     }));
     router.push('/identify');
   };
@@ -553,6 +565,18 @@ export default function MatchingPage() {
                     </div>
                   ))}
                 </div>
+
+                {myLocation.lat !== 0 && match.lat !== 0 && (
+                  <div className="mb-4" style={{ height: '150px' }}>
+                    <TradeMapWrapper
+                      myLat={myLocation.lat}
+                      myLng={myLocation.lng}
+                      otherLat={match.lat}
+                      otherLng={match.lng}
+                      otherName={match.nickname}
+                    />
+                  </div>
+                )}
 
                 <button
                   onClick={() => handleMatch(match.id)}
