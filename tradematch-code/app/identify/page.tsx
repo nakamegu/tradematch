@@ -13,6 +13,9 @@ export default function IdentifyPage() {
   const [isFlashing, setIsFlashing] = useState(false);
   const [statusLabel, setStatusLabel] = useState<string>('');
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
+  // tradedQty: key = "groupIdx-give-itemIdx" or "groupIdx-get-itemIdx", value = quantity
+  const [tradedQty, setTradedQty] = useState<Record<string, number>>({});
+  const [qtyConfirmed, setQtyConfirmed] = useState(false);
   const router = useRouter();
   const channelRef = useRef<RealtimeChannel | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -143,8 +146,30 @@ export default function IdentifyPage() {
     setTimeout(() => setIsFlashing(false), 1500);
   };
 
-  // Update tradeGroups in localStorage after trade completion
-  const updateTradeGroupsAfterTrade = () => {
+  // Initialize tradedQty with default values (1 per item) when trade completes
+  const initTradedQty = useCallback((groupMatches: any[]) => {
+    const qty: Record<string, number> = {};
+    groupMatches.forEach((gm: any, i: number) => {
+      (gm.youOffer || []).forEach((_: any, j: number) => {
+        qty[`${i}-give-${j}`] = 1;
+      });
+      (gm.theyOffer || []).forEach((_: any, j: number) => {
+        qty[`${i}-get-${j}`] = 1;
+      });
+    });
+    setTradedQty(qty);
+  }, []);
+
+  const updateTradedQty = (key: string, delta: number, max: number) => {
+    setTradedQty((prev) => {
+      const current = prev[key] ?? 0;
+      const next = Math.max(0, Math.min(max, current + delta));
+      return { ...prev, [key]: next };
+    });
+  };
+
+  // Update tradeGroups in localStorage using edited quantities
+  const updateTradeGroupsAfterTrade = useCallback(() => {
     const groupMatches = matchData?.groupMatches;
     if (!groupMatches || groupMatches.length === 0) return;
 
@@ -155,31 +180,33 @@ export default function IdentifyPage() {
       const tradeGroups = JSON.parse(saved);
       if (!Array.isArray(tradeGroups)) return;
 
-      // Process each groupMatch: reduce have quantities and wantQuantity
-      for (const gm of groupMatches) {
+      for (let i = 0; i < groupMatches.length; i++) {
+        const gm = groupMatches[i];
         const idx = gm.myGroupIdx;
         if (idx == null || !tradeGroups[idx]) continue;
         const group = tradeGroups[idx];
 
-        // Reduce have quantities by 1 for each youOffer item
-        for (const item of gm.youOffer || []) {
+        // Reduce have quantities by edited amount for each youOffer item
+        (gm.youOffer || []).forEach((item: any, j: number) => {
+          const qty = tradedQty[`${i}-give-${j}`] ?? 1;
           if (item.id && group.have[item.id]) {
-            group.have[item.id] -= 1;
+            group.have[item.id] -= qty;
             if (group.have[item.id] <= 0) {
               delete group.have[item.id];
             }
           }
-        }
+        });
 
-        // Reduce wantQuantity by 1
-        if (group.wantQuantity > 1) {
-          group.wantQuantity -= 1;
-        }
+        // Reduce wantQuantity by max of get quantities
+        const maxGetQty = (gm.theyOffer || []).reduce((max: number, _: any, j: number) => {
+          return Math.max(max, tradedQty[`${i}-get-${j}`] ?? 1);
+        }, 0);
+        group.wantQuantity = Math.max(0, (group.wantQuantity || 1) - maxGetQty);
       }
 
-      // Remove empty groups (no have items left)
+      // Remove empty groups
       const filtered = tradeGroups.filter(
-        (g: any) => Object.keys(g.have).length > 0 && g.wantItems.length > 0
+        (g: any) => Object.keys(g.have).length > 0 && g.wantItems.length > 0 && g.wantQuantity > 0
       );
 
       if (filtered.length > 0) {
@@ -190,7 +217,7 @@ export default function IdentifyPage() {
     } catch {
       // ignore parse errors
     }
-  };
+  }, [matchData, tradedQty]);
 
   const handleComplete = async () => {
     const matchRecordId = matchData?.matchRecordId;
@@ -212,18 +239,27 @@ export default function IdentifyPage() {
         console.log('[Identify] Match updated successfully:', data);
         setMatchRecord(data as Match);
         setStatusLabel(getStatusLabel('completed'));
-        updateTradeGroupsAfterTrade();
+        if (matchData?.groupMatches) {
+          initTradedQty(matchData.groupMatches);
+        }
       }
     }
   };
 
+  const handleConfirmQty = () => {
+    updateTradeGroupsAfterTrade();
+    setQtyConfirmed(true);
+  };
+
   const handleGoHome = () => {
+    if (!qtyConfirmed) updateTradeGroupsAfterTrade();
     localStorage.removeItem('currentMatch');
     localStorage.removeItem('tradeGroups');
     router.push('/');
   };
 
   const handleContinueTrade = () => {
+    if (!qtyConfirmed) updateTradeGroupsAfterTrade();
     localStorage.removeItem('currentMatch');
     router.push('/register');
   };
@@ -322,28 +358,82 @@ export default function IdentifyPage() {
               ✓ 交換完了済み
             </div>
 
-            {/* Trade summary */}
+            {/* Trade summary — editable quantities */}
             {matchData.groupMatches && matchData.groupMatches.length > 0 && (
               <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-left">
-                <p className="text-sm font-bold text-gray-700 mb-2">交換内容</p>
+                <p className="text-sm font-bold text-gray-700 mb-2">
+                  交換内容{!qtyConfirmed && ' (数量を調整できます)'}
+                </p>
                 {matchData.groupMatches.map((gm: any, i: number) => (
                   <div key={i} className="mb-2 last:mb-0">
                     <div className="flex gap-2 text-xs">
                       <div className="flex-1 bg-purple-50 rounded-lg p-2">
                         <p className="font-semibold text-purple-700 mb-1">渡したもの</p>
-                        {gm.youOffer?.map((item: any, j: number) => (
-                          <p key={j} className="text-gray-700">{item.name} ×1</p>
-                        ))}
+                        {gm.youOffer?.map((item: any, j: number) => {
+                          const key = `${i}-give-${j}`;
+                          const qty = tradedQty[key] ?? 1;
+                          const max = item.quantity || 1;
+                          return (
+                            <div key={j} className="flex items-center justify-between text-gray-700 mb-1">
+                              <span className="truncate mr-1">{item.name}</span>
+                              {!qtyConfirmed ? (
+                                <span className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => updateTradedQty(key, -1, max)}
+                                    className="w-5 h-5 rounded bg-purple-200 text-purple-800 font-bold leading-none"
+                                  >-</button>
+                                  <span className="w-4 text-center font-bold">{qty}</span>
+                                  <button
+                                    onClick={() => updateTradedQty(key, 1, max)}
+                                    className="w-5 h-5 rounded bg-purple-200 text-purple-800 font-bold leading-none"
+                                  >+</button>
+                                </span>
+                              ) : (
+                                <span className="font-bold">×{qty}</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="flex-1 bg-pink-50 rounded-lg p-2">
                         <p className="font-semibold text-pink-700 mb-1">もらったもの</p>
-                        {gm.theyOffer?.map((item: any, j: number) => (
-                          <p key={j} className="text-gray-700">{item.name} ×1</p>
-                        ))}
+                        {gm.theyOffer?.map((item: any, j: number) => {
+                          const key = `${i}-get-${j}`;
+                          const qty = tradedQty[key] ?? 1;
+                          const max = item.quantity || 1;
+                          return (
+                            <div key={j} className="flex items-center justify-between text-gray-700 mb-1">
+                              <span className="truncate mr-1">{item.name}</span>
+                              {!qtyConfirmed ? (
+                                <span className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => updateTradedQty(key, -1, max)}
+                                    className="w-5 h-5 rounded bg-pink-200 text-pink-800 font-bold leading-none"
+                                  >-</button>
+                                  <span className="w-4 text-center font-bold">{qty}</span>
+                                  <button
+                                    onClick={() => updateTradedQty(key, 1, max)}
+                                    className="w-5 h-5 rounded bg-pink-200 text-pink-800 font-bold leading-none"
+                                  >+</button>
+                                </span>
+                              ) : (
+                                <span className="font-bold">×{qty}</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
                 ))}
+                {!qtyConfirmed && (
+                  <button
+                    onClick={handleConfirmQty}
+                    className="w-full mt-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 rounded-xl font-semibold text-sm hover:shadow-lg transition-all"
+                  >
+                    数量を確定
+                  </button>
+                )}
               </div>
             )}
 
