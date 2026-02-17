@@ -7,6 +7,7 @@ import type { Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
+import { useDeleteAccount } from '@/lib/useDeleteAccount';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -59,6 +60,7 @@ export default function MatchingPage() {
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const [eventData, setEventData] = useState<Event | null>(null);
   const [isInArea, setIsInArea] = useState(true);
+  const { showDeleteConfirm, setShowDeleteConfirm, deleting, handleDeleteAllData } = useDeleteAccount();
 
   const searchMatches = useCallback(async (myGroups: TradeGroup[]) => {
     try {
@@ -615,13 +617,46 @@ export default function MatchingPage() {
           </div>
         )}
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 text-center space-y-3">
           <button
             onClick={() => router.push('/register')}
             className="text-white underline hover:text-purple-200"
           >
             ← グッズ登録に戻る
           </button>
+
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="block mx-auto text-white/60 text-xs hover:text-white/90 mt-4"
+            >
+              データを全て削除して終了
+            </button>
+          ) : (
+            <div className="bg-white rounded-2xl p-4 shadow-lg text-left">
+              <p className="text-sm font-bold text-red-600 mb-2">
+                本当に削除しますか？
+              </p>
+              <p className="text-xs text-gray-600 mb-3">
+                あなたの登録データ（ユーザー情報・グッズ登録・マッチング履歴）が全て削除されます。この操作は取り消せません。
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteAllData}
+                  disabled={deleting}
+                  className="flex-1 bg-red-500 text-white py-2 rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-50"
+                >
+                  {deleting ? '削除中...' : '削除する'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold hover:bg-gray-300"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>

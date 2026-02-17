@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, GoodsMaster } from '@/lib/supabase';
+import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import Image from 'next/image';
 
 interface TradeGroup {
@@ -24,6 +25,7 @@ export default function RegisterPage() {
   const [eventName, setEventName] = useState('');
   const [expandedGroup, setExpandedGroup] = useState(0);
   const router = useRouter();
+  const { showDeleteConfirm, setShowDeleteConfirm, deleting, handleDeleteAllData } = useDeleteAccount();
 
   useEffect(() => {
     const nickname = localStorage.getItem('nickname');
@@ -383,6 +385,41 @@ export default function RegisterPage() {
         >
           マッチング開始
         </button>
+
+        <div className="mt-6 text-center">
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-white/60 text-xs hover:text-white/90"
+            >
+              データを全て削除して終了
+            </button>
+          ) : (
+            <div className="bg-white rounded-2xl p-4 shadow-lg text-left">
+              <p className="text-sm font-bold text-red-600 mb-2">
+                本当に削除しますか？
+              </p>
+              <p className="text-xs text-gray-600 mb-3">
+                あなたの登録データ（ユーザー情報・グッズ登録・マッチング履歴）が全て削除されます。この操作は取り消せません。
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteAllData}
+                  disabled={deleting}
+                  className="flex-1 bg-red-500 text-white py-2 rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-50"
+                >
+                  {deleting ? '削除中...' : '削除する'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold hover:bg-gray-300"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
