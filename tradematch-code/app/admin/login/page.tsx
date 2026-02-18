@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-[#1a2d4a] flex items-center justify-center p-4">
       <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center text-slate-800 mb-2">管理者ログイン</h1>
-        <p className="text-slate-400 text-center text-sm mb-6">トレマチ管理ダッシュボード</p>
+        <p className="text-slate-400 text-center text-sm mb-6">交換っこ 管理ダッシュボード</p>
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">

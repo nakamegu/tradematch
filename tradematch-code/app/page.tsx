@@ -28,7 +28,7 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center bg-[#1a2d4a] p-4">
       <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-800 mb-2">トレマチ</h1>
+          <h1 className="text-4xl font-bold text-slate-800 mb-2">交換っこ</h1>
           <p className="text-slate-400">ライブグッズ交換アプリ</p>
         </div>
 

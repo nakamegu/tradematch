@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <a href="/admin" className="text-lg font-bold text-indigo-400">
-              トレマチ管理
+              交換っこ管理
             </a>
             <nav className="flex gap-4">
               <a
