@@ -206,110 +206,110 @@ export default function EventsManagementPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">イベント管理</h1>
+      <h1 className="text-2xl font-bold text-slate-100 mb-6">イベント管理</h1>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
+        <div className="bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">
           {error}
         </div>
       )}
 
       {/* フォーム */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-bold mb-4">
+      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+        <h2 className="text-lg font-bold text-slate-800 mb-4">
           {editingId ? 'イベント編集' : '新規イベント作成'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">イベント名 *</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">イベント名 *</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
                 placeholder="例: 東京ドーム公演 2026"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">アーティスト名 *</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">アーティスト名 *</label>
               <input
                 type="text"
                 value={form.artist_name}
                 onChange={(e) => setForm({ ...form, artist_name: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
                 placeholder="例: アーティスト名"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">開催日 *</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">開催日 *</label>
               <input
                 type="date"
                 value={form.event_date}
                 onChange={(e) => setForm({ ...form, event_date: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">会場</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">会場</label>
               <input
                 type="text"
                 value={form.venue}
                 onChange={(e) => setForm({ ...form, venue: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
                 placeholder="例: 東京ドーム"
               />
             </div>
           </div>
 
           {/* 登録可能期間 */}
-          <fieldset className="border border-gray-200 rounded-lg p-4">
-            <legend className="text-sm font-semibold text-gray-700 px-1">アイテム登録可能期間</legend>
+          <fieldset className="border border-slate-300 rounded-xl p-4">
+            <legend className="text-sm font-semibold text-slate-600 px-1">アイテム登録可能期間</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">開始日時</label>
+                <label className="block text-xs text-slate-500 mb-1">開始日時</label>
                 <input
                   type="datetime-local"
                   value={form.register_start}
                   onChange={(e) => setForm({ ...form, register_start: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">終了日時</label>
+                <label className="block text-xs text-slate-500 mb-1">終了日時</label>
                 <input
                   type="datetime-local"
                   value={form.register_end}
                   onChange={(e) => setForm({ ...form, register_end: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
           </fieldset>
 
           {/* 交換可能期間 */}
-          <fieldset className="border border-gray-200 rounded-lg p-4">
-            <legend className="text-sm font-semibold text-gray-700 px-1">交換可能期間</legend>
+          <fieldset className="border border-slate-300 rounded-xl p-4">
+            <legend className="text-sm font-semibold text-slate-600 px-1">交換可能期間</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">開始日時</label>
+                <label className="block text-xs text-slate-500 mb-1">開始日時</label>
                 <input
                   type="datetime-local"
                   value={form.trade_start}
                   onChange={(e) => setForm({ ...form, trade_start: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">終了日時</label>
+                <label className="block text-xs text-slate-500 mb-1">終了日時</label>
                 <input
                   type="datetime-local"
                   value={form.trade_end}
                   onChange={(e) => setForm({ ...form, trade_end: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -318,14 +318,14 @@ export default function EventsManagementPage() {
           {/* 会場エリア1〜3 */}
           <div className="space-y-4">
             {form.locations.map((loc, i) => (
-              <div key={i} className="border border-gray-200 rounded-lg p-4">
+              <div key={i} className="border border-slate-300 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">{locationLabels[i]}</h3>
+                  <h3 className="text-sm font-semibold text-slate-600">{locationLabels[i]}</h3>
                   {(loc.latitude || loc.longitude) && (
                     <button
                       type="button"
                       onClick={() => clearLocation(i)}
-                      className="text-xs text-red-500 hover:text-red-700"
+                      className="text-xs text-red-600 hover:text-red-500"
                     >
                       クリア
                     </button>
@@ -346,36 +346,36 @@ export default function EventsManagementPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">緯度</label>
+                    <label className="block text-xs text-slate-500 mb-1">緯度</label>
                     <input
                       type="number"
                       step="any"
                       value={loc.latitude}
                       onChange={(e) => updateLocation(i, { latitude: e.target.value })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
                       placeholder="35.7056"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">経度</label>
+                    <label className="block text-xs text-slate-500 mb-1">経度</label>
                     <input
                       type="number"
                       step="any"
                       value={loc.longitude}
                       onChange={(e) => updateLocation(i, { longitude: e.target.value })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
                       placeholder="139.7519"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">半径 (km)</label>
+                    <label className="block text-xs text-slate-500 mb-1">半径 (km)</label>
                     <input
                       type="number"
                       step="0.1"
                       min="0.1"
                       value={loc.radius_km}
                       onChange={(e) => updateLocation(i, { radius_km: e.target.value })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
                       placeholder="1.0"
                     />
                   </div>
@@ -392,7 +392,7 @@ export default function EventsManagementPage() {
               onChange={(e) => setForm({ ...form, allow_goods_request: e.target.checked })}
               className="rounded"
             />
-            <label htmlFor="allow_goods_request" className="text-sm text-gray-700">グッズ追加リクエストを許可</label>
+            <label htmlFor="allow_goods_request" className="text-sm text-slate-600">グッズ追加リクエストを許可</label>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -402,13 +402,13 @@ export default function EventsManagementPage() {
               onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
               className="rounded"
             />
-            <label htmlFor="is_active" className="text-sm text-gray-700">イベントを有効にする</label>
+            <label htmlFor="is_active" className="text-sm text-slate-600">イベントを有効にする</label>
           </div>
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={saving}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+              className="bg-indigo-500 text-white px-4 py-2 rounded-xl hover:bg-indigo-400 disabled:opacity-50 text-sm font-semibold"
             >
               {saving ? '保存中...' : editingId ? '更新' : '作成'}
             </button>
@@ -416,7 +416,7 @@ export default function EventsManagementPage() {
               <button
                 type="button"
                 onClick={cancelEdit}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 text-sm"
+                className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-300 text-sm"
               >
                 キャンセル
               </button>
@@ -426,41 +426,41 @@ export default function EventsManagementPage() {
       </div>
 
       {/* テーブル */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-slate-100">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">イベント名</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">アーティスト</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">開催日</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">会場</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">ステータス</th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">操作</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">イベント名</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">アーティスト</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">開催日</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">会場</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">ステータス</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">操作</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-200">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">読み込み中...</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">読み込み中...</td>
               </tr>
             ) : events.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">イベントがありません</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">イベントがありません</td>
               </tr>
             ) : (
               events.map((event) => (
-                <tr key={event.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm">{event.name}</td>
-                  <td className="px-4 py-3 text-sm">{event.artist_name}</td>
-                  <td className="px-4 py-3 text-sm">{event.event_date}</td>
-                  <td className="px-4 py-3 text-sm">{event.venue || '-'}</td>
+                <tr key={event.id} className="hover:bg-slate-200">
+                  <td className="px-4 py-3 text-sm text-slate-700">{event.name}</td>
+                  <td className="px-4 py-3 text-sm text-slate-700">{event.artist_name}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{event.event_date}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{event.venue || '-'}</td>
                   <td className="px-4 py-3 text-sm">
                     <button
                       onClick={() => toggleActive(event)}
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         event.is_active
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                          ? 'bg-emerald-500/20 text-emerald-600 hover:bg-emerald-500/30'
+                          : 'bg-slate-200 text-slate-400 hover:bg-slate-300'
                       }`}
                     >
                       {event.is_active ? '有効' : '無効'}
@@ -469,7 +469,7 @@ export default function EventsManagementPage() {
                   <td className="px-4 py-3 text-sm">
                     <button
                       onClick={() => startEdit(event)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
+                      className="text-indigo-600 hover:text-indigo-500 text-sm"
                     >
                       編集
                     </button>

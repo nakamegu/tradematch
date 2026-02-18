@@ -8,6 +8,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
+import { MapPin, Loader2, SearchX, Lightbulb, User, Bell } from 'lucide-react';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -455,11 +456,11 @@ export default function MatchingPage() {
 
   if (!locationGranted) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">📍</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">位置情報の許可</h2>
-          <p className="text-gray-600 mb-6">
+      <main className="min-h-screen flex items-center justify-center bg-[#1a2d4a] p-4">
+        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center">
+          <MapPin className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-800 mb-4">位置情報の許可</h2>
+          <p className="text-slate-400 mb-6">
             近くの交換相手を見つけるために、位置情報の利用を許可してください。
           </p>
         </div>
@@ -469,17 +470,17 @@ export default function MatchingPage() {
 
   if (isSearching) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="animate-spin text-6xl mb-4">🔍</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">マッチング検索中...</h2>
-          <p className="text-gray-600">
+      <main className="min-h-screen flex items-center justify-center bg-[#1a2d4a] p-4">
+        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center">
+          <Loader2 className="w-12 h-12 text-indigo-600 mx-auto mb-4 animate-spin" />
+          <h2 className="text-2xl font-bold text-slate-800 mb-4">マッチング検索中...</h2>
+          <p className="text-slate-400">
             近くの交換相手を探しています
           </p>
           <div className="mt-6 flex justify-center gap-2">
-            <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            <div className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-3 h-3 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
           </div>
         </div>
       </main>
@@ -487,24 +488,24 @@ export default function MatchingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-500 to-pink-500 p-4">
+    <main className="min-h-screen bg-[#1a2d4a] p-4">
       <div className="max-w-2xl mx-auto">
         {/* Incoming trade request */}
         {incomingRequest && (
-          <div className="bg-yellow-50 border-2 border-yellow-400 p-5 rounded-3xl mb-4 shadow-lg">
-            <p className="font-bold text-yellow-800 text-lg mb-3">
-              🔔 {incomingRequest.requesterName}さんから交換リクエスト！
+          <div className="bg-amber-500/10 border-2 border-amber-500/30 p-5 rounded-2xl mb-4">
+            <p className="font-bold text-amber-600 text-lg mb-3 flex items-center gap-2">
+              <Bell className="w-5 h-5" /> {incomingRequest.requesterName}さんから交換リクエスト！
             </p>
             <div className="flex gap-3">
               <button
                 onClick={handleAcceptRequest}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
               >
-                承認して識別へ →
+                承認して識別へ
               </button>
               <button
                 onClick={() => setIncomingRequest(null)}
-                className="px-4 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                className="px-4 bg-slate-100 text-slate-600 py-3 rounded-xl font-semibold hover:bg-slate-300 transition-colors"
               >
                 後で
               </button>
@@ -512,9 +513,9 @@ export default function MatchingPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">マッチング結果</h1>
-          <p className="text-gray-600">
+        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">マッチング結果</h1>
+          <p className="text-slate-400">
             {matches.length > 0
               ? `${matches.length}人の交換相手が見つかりました！`
               : '近くに交換相手が見つかりませんでした'}
@@ -522,24 +523,25 @@ export default function MatchingPage() {
         </div>
 
         {matches.length === 0 ? (
-          <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
-            <div className="text-6xl mb-4">😢</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+            <SearchX className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">
               マッチング相手が見つかりませんでした
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-slate-400 mb-6">
               近くに交換可能なグッズを持った人がいないようです。
               <br />
               別のグッズを登録してみるか、もう少し待ってみてください。
             </p>
-            <div className="bg-blue-50 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-700">
-                💡 <strong>ヒント:</strong> 新しいユーザーが登録すると自動的に再検索されます。このページを開いたままお待ちください。
+            <div className="bg-slate-100 border border-slate-300 rounded-xl p-4 mb-4">
+              <p className="text-sm text-slate-600 flex items-start gap-2">
+                <Lightbulb className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                <span><strong>ヒント:</strong> 新しいユーザーが登録すると自動的に再検索されます。このページを開いたままお待ちください。</span>
               </p>
             </div>
             <button
               onClick={() => router.push('/register')}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+              className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
             >
               グッズ登録に戻る
             </button>
@@ -547,14 +549,14 @@ export default function MatchingPage() {
         ) : (
           <div className="space-y-4">
             {matches.map((match) => (
-              <div key={match.id} className="bg-white rounded-3xl shadow-2xl p-6">
+              <div key={match.id} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="text-4xl">👤</div>
+                    <User className="w-10 h-10 text-slate-400" />
                     <div>
-                      <h3 className="text-xl font-bold text-gray-800">{match.nickname}</h3>
+                      <h3 className="text-xl font-bold text-slate-800">{match.nickname}</h3>
                       {match.distance > 0 && (
-                        <p className="text-sm text-gray-500">約 {match.distance}m</p>
+                        <p className="text-sm text-slate-400">約 {match.distance}m</p>
                       )}
                     </div>
                   </div>
@@ -567,25 +569,25 @@ export default function MatchingPage() {
                 {/* Group matches */}
                 <div className="space-y-3 mb-4">
                   {match.groupMatches.map((gm, gmIdx) => (
-                    <div key={gmIdx} className="bg-gray-50 rounded-xl p-3">
+                    <div key={gmIdx} className="bg-slate-100 rounded-xl p-3">
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-purple-50 rounded-lg p-2">
-                          <p className="text-xs font-semibold text-purple-700 mb-1">
+                        <div className="bg-slate-50 rounded-lg p-2">
+                          <p className="text-xs font-semibold text-indigo-600 mb-1">
                             相手が出せる
-                            <span className="text-gray-500 font-normal"> (欲しい数:{gm.myWantQty})</span>
+                            <span className="text-slate-500 font-normal"> (欲しい数:{gm.myWantQty})</span>
                           </p>
-                          <ul className="text-xs text-gray-700 space-y-0.5">
+                          <ul className="text-xs text-slate-600 space-y-0.5">
                             {gm.theyOffer.map((item, i) => (
                               <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
                             ))}
                           </ul>
                         </div>
-                        <div className="bg-pink-50 rounded-lg p-2">
-                          <p className="text-xs font-semibold text-pink-700 mb-1">
+                        <div className="bg-slate-50 rounded-lg p-2">
+                          <p className="text-xs font-semibold text-indigo-600 mb-1">
                             あなたが出せる
-                            <span className="text-gray-500 font-normal"> (相手の欲しい数:{gm.theyWantQty})</span>
+                            <span className="text-slate-500 font-normal"> (相手の欲しい数:{gm.theyWantQty})</span>
                           </p>
-                          <ul className="text-xs text-gray-700 space-y-0.5">
+                          <ul className="text-xs text-slate-600 space-y-0.5">
                             {gm.youOffer.map((item, i) => (
                               <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
                             ))}
@@ -611,12 +613,12 @@ export default function MatchingPage() {
                 {isInArea ? (
                   <button
                     onClick={() => handleMatch(match.id)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                    className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
                   >
-                    この人と交換する →
+                    この人と交換する
                   </button>
                 ) : (
-                  <div className="w-full bg-gray-300 text-gray-500 py-3 rounded-xl font-bold text-center">
+                  <div className="w-full bg-slate-200 text-slate-400 py-3 rounded-xl font-bold text-center">
                     会場エリア外のため交換できません
                   </div>
                 )}
@@ -628,37 +630,37 @@ export default function MatchingPage() {
         <div className="mt-4 text-center space-y-3">
           <button
             onClick={() => router.push('/register')}
-            className="text-white underline hover:text-purple-200"
+            className="text-indigo-400 underline hover:text-indigo-300"
           >
-            ← グッズ登録に戻る
+            グッズ登録に戻る
           </button>
 
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="block mx-auto text-white/60 text-xs hover:text-white/90 mt-4"
+              className="block mx-auto text-slate-500 text-xs hover:text-slate-400 mt-4"
             >
               データを全て削除して終了
             </button>
           ) : (
-            <div className="bg-white rounded-2xl p-4 shadow-lg text-left">
+            <div className="bg-slate-50 rounded-2xl shadow-sm border border-red-500/30 p-4 text-left">
               <p className="text-sm font-bold text-red-600 mb-2">
                 本当に削除しますか？
               </p>
-              <p className="text-xs text-gray-600 mb-3">
+              <p className="text-xs text-slate-400 mb-3">
                 あなたの登録データ（ユーザー情報・グッズ登録・マッチング履歴）が全て削除されます。この操作は取り消せません。
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={handleDeleteAllData}
                   disabled={deleting}
-                  className="flex-1 bg-red-500 text-white py-2 rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-50"
+                  className="flex-1 bg-red-500/20 text-red-600 border border-red-500/30 py-2 rounded-xl text-sm font-bold hover:bg-red-500/30 disabled:opacity-50"
                 >
                   {deleting ? '削除中...' : '削除する'}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold hover:bg-gray-300"
+                  className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300"
                 >
                   キャンセル
                 </button>

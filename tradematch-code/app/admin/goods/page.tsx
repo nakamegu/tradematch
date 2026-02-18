@@ -218,26 +218,26 @@ export default function GoodsManagementPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">グッズ管理</h1>
+      <h1 className="text-2xl font-bold text-slate-100 mb-6">グッズ管理</h1>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
+        <div className="bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4 text-sm">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 px-4 py-3 rounded-xl mb-4 text-sm">
           {success}
         </div>
       )}
 
       {/* イベント選択 */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">イベント選択</label>
+      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
+        <label className="block text-sm font-medium text-slate-600 mb-1">イベント選択</label>
         <select
           value={selectedEventId}
           onChange={(e) => setSelectedEventId(e.target.value)}
-          className="w-full md:w-96 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full md:w-96 px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
         >
           {events.map((event) => (
             <option key={event.id} value={event.id}>
@@ -251,13 +251,13 @@ export default function GoodsManagementPage() {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => { setBulkMode(false); setEditingId(null) }}
-          className={`px-4 py-2 rounded-md text-sm ${!bulkMode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          className={`px-4 py-2 rounded-xl text-sm ${!bulkMode ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'}`}
         >
           個別登録
         </button>
         <button
           onClick={() => { setBulkMode(true); setEditingId(null); setForm(emptyForm) }}
-          className={`px-4 py-2 rounded-md text-sm ${bulkMode ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          className={`px-4 py-2 rounded-xl text-sm ${bulkMode ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'}`}
         >
           一括登録
         </button>
@@ -265,55 +265,55 @@ export default function GoodsManagementPage() {
 
       {/* 個別登録フォーム */}
       {!bulkMode && (
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-bold mb-4">
+        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+          <h2 className="text-lg font-bold text-slate-800 mb-4">
             {editingId ? 'グッズ編集' : '新規グッズ作成'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">グッズ名 *</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">グッズ名 *</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
                   placeholder="例: アクリルスタンド A"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ *</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1">カテゴリ *</label>
                 <input
                   type="text"
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
                   placeholder="例: アクリルスタンド"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">説明</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">説明</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
                 rows={2}
                 placeholder="グッズの説明（任意）"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">画像</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">画像</label>
               <input
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
                 onChange={handleImageUpload}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-indigo-500/20 file:text-indigo-600 hover:file:bg-indigo-500/30"
               />
-              {uploading && <p className="text-sm text-gray-500 mt-1">アップロード中...</p>}
+              {uploading && <p className="text-sm text-slate-500 mt-1">アップロード中...</p>}
               {form.image_url && (
                 <div className="mt-2">
                   <img src={form.image_url} alt="プレビュー" className="h-20 w-20 object-cover rounded" />
@@ -324,7 +324,7 @@ export default function GoodsManagementPage() {
               <button
                 type="submit"
                 disabled={saving || uploading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+                className="bg-indigo-500 text-white px-4 py-2 rounded-xl hover:bg-indigo-400 disabled:opacity-50 text-sm font-semibold"
               >
                 {saving ? '保存中...' : editingId ? '更新' : '作成'}
               </button>
@@ -332,7 +332,7 @@ export default function GoodsManagementPage() {
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 text-sm"
+                  className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-300 text-sm"
                 >
                   キャンセル
                 </button>
@@ -344,15 +344,15 @@ export default function GoodsManagementPage() {
 
       {/* 一括登録フォーム */}
       {bulkMode && (
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-bold mb-4">一括登録</h2>
-          <p className="text-sm text-gray-500 mb-3">
+        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+          <h2 className="text-lg font-bold text-slate-800 mb-4">一括登録</h2>
+          <p className="text-sm text-slate-400 mb-3">
             1行につき「カテゴリ,グッズ名」の形式で入力してください。
           </p>
           <textarea
             value={bulkText}
             onChange={(e) => setBulkText(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+            className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-mono text-sm placeholder-slate-400"
             rows={10}
             placeholder={`アクリルスタンド,メンバーA\nアクリルスタンド,メンバーB\nうちわ,メンバーA\nうちわ,メンバーB`}
           />
@@ -360,7 +360,7 @@ export default function GoodsManagementPage() {
             <button
               onClick={handleBulkInsert}
               disabled={saving || !bulkText.trim()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+              className="bg-indigo-500 text-white px-4 py-2 rounded-xl hover:bg-indigo-400 disabled:opacity-50 text-sm font-semibold"
             >
               {saving ? '登録中...' : '一括登録'}
             </button>
@@ -369,46 +369,46 @@ export default function GoodsManagementPage() {
       )}
 
       {/* グッズ一覧 */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="px-4 py-3 bg-gray-50 border-b">
-          <h2 className="text-sm font-medium text-gray-600">
+      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="px-4 py-3 bg-slate-100 border-b border-slate-300">
+          <h2 className="text-sm font-medium text-slate-400">
             グッズ一覧（{goods.length}件）
           </h2>
         </div>
         {loading ? (
-          <p className="px-4 py-8 text-center text-gray-500">読み込み中...</p>
+          <p className="px-4 py-8 text-center text-slate-500">読み込み中...</p>
         ) : goods.length === 0 ? (
-          <p className="px-4 py-8 text-center text-gray-500">グッズがありません</p>
+          <p className="px-4 py-8 text-center text-slate-500">グッズがありません</p>
         ) : (
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">画像</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">グッズ名</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">カテゴリ</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">ステータス</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">操作</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">画像</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">グッズ名</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">カテゴリ</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">ステータス</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-200">
               {goods.map((g) => (
-                <tr key={g.id} className="hover:bg-gray-50">
+                <tr key={g.id} className="hover:bg-slate-200">
                   <td className="px-4 py-3">
                     {g.image_url ? (
                       <img src={g.image_url} alt={g.name} className="h-10 w-10 object-cover rounded" />
                     ) : (
-                      <div className="h-10 w-10 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
+                      <div className="h-10 w-10 bg-slate-200 rounded flex items-center justify-center text-slate-500 text-xs">
                         No img
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm">{g.name}</td>
+                  <td className="px-4 py-3 text-sm text-slate-700">{g.name}</td>
                   <td className="px-4 py-3 text-sm">
-                    <span className="px-2 py-1 bg-gray-100 rounded text-xs">{g.category}</span>
+                    <span className="px-2 py-1 bg-slate-200 rounded text-xs text-slate-600">{g.category}</span>
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <span className={`px-2 py-1 rounded text-xs ${
-                      g.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      g.status === 'active' ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-200 text-slate-400'
                     }`}>
                       {g.status}
                     </span>
@@ -417,13 +417,13 @@ export default function GoodsManagementPage() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => startEdit(g)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-indigo-600 hover:text-indigo-500"
                       >
                         編集
                       </button>
                       <button
                         onClick={() => handleDelete(g.id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-red-600 hover:text-red-500"
                       >
                         削除
                       </button>

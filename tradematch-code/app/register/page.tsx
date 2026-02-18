@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, GoodsMaster, Event } from '@/lib/supabase';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import Image from 'next/image';
+import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -173,8 +174,8 @@ export default function RegisterPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-500">
-        <div className="text-white text-2xl">読み込み中...</div>
+      <main className="min-h-screen flex items-center justify-center bg-[#1a2d4a]">
+        <div className="text-slate-400 text-2xl">読み込み中...</div>
       </main>
     );
   }
@@ -199,7 +200,7 @@ export default function RegisterPage() {
             className={`p-2 rounded-xl border-2 transition-all cursor-pointer text-center ${
               isSelected
                 ? `${selectedBg} ${selectedBorder}`
-                : 'bg-gray-50 border-gray-300'
+                : 'bg-slate-100 border-slate-300'
             }`}
           >
             {good.image_url && (
@@ -212,7 +213,7 @@ export default function RegisterPage() {
                 />
               </div>
             )}
-            <p className="text-xs font-medium text-gray-800 leading-tight">
+            <p className="text-xs font-medium text-slate-700 leading-tight">
               {good.name}
             </p>
             {isSelected && adjustFn && (
@@ -223,7 +224,7 @@ export default function RegisterPage() {
                 >
                   -
                 </button>
-                <span className="text-xs font-bold w-5 text-center">{qty}</span>
+                <span className="text-xs font-bold w-5 text-center text-slate-700">{qty}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); adjustFn(good.id, 1); }}
                   className={`w-6 h-6 rounded-full ${buttonColor} text-white font-bold text-xs flex items-center justify-center`}
@@ -246,12 +247,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-4">
+    <main className="min-h-screen bg-[#1a2d4a] p-4">
       <div className="max-w-4xl mx-auto">
         {/* ヘッダー */}
-        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">グッズ登録</h1>
-          <p className="text-gray-600">{eventName}</p>
+        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">グッズ登録</h1>
+          <p className="text-slate-400">{eventName}</p>
         </div>
 
         {/* 交換セット一覧 */}
@@ -261,17 +262,17 @@ export default function RegisterPage() {
           const wantCount = group.wantItems.length;
 
           return (
-            <div key={idx} className="bg-white rounded-3xl shadow-2xl mb-4 overflow-hidden">
+            <div key={idx} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 mb-4 overflow-hidden">
               {/* グループヘッダー */}
               <div
-                className="flex items-center justify-between p-4 cursor-pointer bg-gradient-to-r from-purple-50 to-pink-50"
+                className="flex items-center justify-between p-4 cursor-pointer bg-slate-100"
                 onClick={() => setExpandedGroup(isExpanded ? -1 : idx)}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-purple-700">
+                  <span className="text-lg font-bold text-indigo-600">
                     交換セット {idx + 1}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-slate-400">
                     出:{Object.keys(group.have).length}種{haveCount}個 / 欲:{wantCount}種×{group.wantQuantity}個
                   </span>
                 </div>
@@ -279,12 +280,16 @@ export default function RegisterPage() {
                   {tradeGroups.length > 1 && (
                     <button
                       onClick={(e) => { e.stopPropagation(); removeGroup(idx); }}
-                      className="w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold text-sm flex items-center justify-center hover:bg-red-200"
+                      className="w-8 h-8 rounded-full bg-red-500/20 text-red-600 font-bold text-sm flex items-center justify-center hover:bg-red-500/30"
                     >
-                      ×
+                      <X className="w-4 h-4" />
                     </button>
                   )}
-                  <span className="text-gray-400 text-xl">{isExpanded ? '▲' : '▼'}</span>
+                  {isExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-400" />
+                  )}
                 </div>
               </div>
 
@@ -292,15 +297,15 @@ export default function RegisterPage() {
                 <div className="p-4">
                   {/* 出すグッズ */}
                   <div className="mb-6">
-                    <h3 className="text-lg font-bold text-purple-600 mb-3 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-indigo-600 mb-3 flex items-center gap-2">
                       出すグッズ
-                      <span className="text-sm font-normal text-gray-500">
+                      <span className="text-sm font-normal text-slate-400">
                         ({Object.keys(group.have).length}種類 / 合計{haveCount}個)
                       </span>
                     </h3>
                     {Object.entries(groupedGoods).map(([category, items]) => (
                       <div key={category} className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        <h4 className="text-sm font-semibold text-slate-600 mb-2">
                           {category}
                         </h4>
                         {renderGoodsGrid(
@@ -308,7 +313,7 @@ export default function RegisterPage() {
                           group.have,
                           (id) => toggleHave(idx, id),
                           (id, d) => adjustHaveQty(idx, id, d),
-                          'bg-purple-100', 'border-purple-500', 'bg-purple-500',
+                          'bg-indigo-500/20', 'border-indigo-500', 'bg-indigo-500',
                         )}
                       </div>
                     ))}
@@ -316,15 +321,15 @@ export default function RegisterPage() {
 
                   {/* 欲しいグッズ */}
                   <div>
-                    <h3 className="text-lg font-bold text-pink-600 mb-3 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-indigo-600 mb-3 flex items-center gap-2">
                       欲しいグッズ
-                      <span className="text-sm font-normal text-gray-500">
+                      <span className="text-sm font-normal text-slate-400">
                         ({wantCount}種類から)
                       </span>
                     </h3>
                     {Object.entries(groupedGoods).map(([category, items]) => (
                       <div key={category} className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        <h4 className="text-sm font-semibold text-slate-600 mb-2">
                           {category}
                         </h4>
                         {renderGoodsGrid(
@@ -332,32 +337,32 @@ export default function RegisterPage() {
                           makeWantMap(group.wantItems),
                           (id) => toggleWant(idx, id),
                           null,
-                          'bg-pink-100', 'border-pink-500', 'bg-pink-500',
+                          'bg-indigo-500/20', 'border-indigo-400', 'bg-indigo-500',
                         )}
                       </div>
                     ))}
 
                     {/* 合計数量 */}
-                    <div className="mt-4 flex items-center gap-3 bg-pink-50 rounded-xl p-3">
-                      <span className="text-sm font-semibold text-pink-700">
+                    <div className="mt-4 flex items-center gap-3 bg-slate-100 border border-slate-300 rounded-xl p-3">
+                      <span className="text-sm font-semibold text-slate-600">
                         欲しい合計数:
                       </span>
                       <button
                         onClick={() => adjustWantQuantity(idx, -1)}
-                        className="w-8 h-8 rounded-full bg-pink-500 text-white font-bold flex items-center justify-center"
+                        className="w-8 h-8 rounded-full bg-indigo-500 text-white font-bold flex items-center justify-center"
                       >
                         -
                       </button>
-                      <span className="text-lg font-bold text-pink-700 w-8 text-center">
+                      <span className="text-lg font-bold text-slate-700 w-8 text-center">
                         {group.wantQuantity}
                       </span>
                       <button
                         onClick={() => adjustWantQuantity(idx, 1)}
-                        className="w-8 h-8 rounded-full bg-pink-500 text-white font-bold flex items-center justify-center"
+                        className="w-8 h-8 rounded-full bg-indigo-500 text-white font-bold flex items-center justify-center"
                       >
                         +
                       </button>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-400">
                         上記{wantCount}種類のうちどれでも{group.wantQuantity}個
                       </span>
                     </div>
@@ -371,20 +376,20 @@ export default function RegisterPage() {
         {/* 交換セット追加ボタン */}
         <button
           onClick={addGroup}
-          className="w-full bg-white bg-opacity-20 backdrop-blur text-white py-3 rounded-xl font-bold text-lg border-2 border-white border-opacity-30 hover:bg-opacity-30 transition-all mb-4"
+          className="w-full bg-slate-50 py-3 rounded-xl font-bold text-lg border-2 border-dashed border-slate-300 text-slate-600 hover:bg-slate-200 transition-all mb-4 flex items-center justify-center gap-2"
         >
-          + 交換セットを追加
+          <Plus className="w-5 h-5" /> 交換セットを追加
         </button>
 
         {/* グッズリクエストボタン */}
         {eventData?.allow_goods_request !== false && (
-          <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
-            <p className="text-gray-700 mb-3">
+          <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
+            <p className="text-slate-600 mb-3">
               探しているグッズが見つかりませんか？
             </p>
             <button
               onClick={() => router.push('/request-goods')}
-              className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-bold transition-colors"
             >
               グッズを追加リクエスト
             </button>
@@ -393,12 +398,12 @@ export default function RegisterPage() {
 
         {/* 登録期間外メッセージ */}
         {!isRegisterOpen && (
-          <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-4 mb-2 text-center">
-            <p className="text-sm text-yellow-800 font-semibold">
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-2 text-center">
+            <p className="text-sm text-amber-600 font-semibold">
               現在はアイテム登録期間外です
             </p>
             {eventData?.register_start && now < eventData.register_start && (
-              <p className="text-xs text-yellow-700 mt-1">
+              <p className="text-xs text-amber-700 mt-1">
                 登録開始: {new Date(eventData.register_start).toLocaleString('ja-JP')}
               </p>
             )}
@@ -410,12 +415,12 @@ export default function RegisterPage() {
           <button
             onClick={handleNext}
             disabled={!isValid || !isRegisterOpen}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-4 rounded-xl font-bold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             マッチング開始
           </button>
         ) : (
-          <div className="w-full bg-gray-300 text-gray-500 py-4 rounded-xl font-bold text-lg text-center">
+          <div className="w-full bg-slate-200 text-slate-400 py-4 rounded-xl font-bold text-lg text-center">
             交換可能期間外です
             {eventData?.trade_start && now < eventData.trade_start && (
               <p className="text-xs font-normal mt-1">
@@ -429,29 +434,29 @@ export default function RegisterPage() {
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="text-white/60 text-xs hover:text-white/90"
+              className="text-slate-500 text-xs hover:text-slate-400"
             >
               データを全て削除して終了
             </button>
           ) : (
-            <div className="bg-white rounded-2xl p-4 shadow-lg text-left">
+            <div className="bg-slate-50 rounded-2xl shadow-sm border border-red-500/30 p-4 text-left">
               <p className="text-sm font-bold text-red-600 mb-2">
                 本当に削除しますか？
               </p>
-              <p className="text-xs text-gray-600 mb-3">
+              <p className="text-xs text-slate-400 mb-3">
                 あなたの登録データ（ユーザー情報・グッズ登録・マッチング履歴）が全て削除されます。この操作は取り消せません。
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={handleDeleteAllData}
                   disabled={deleting}
-                  className="flex-1 bg-red-500 text-white py-2 rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-50"
+                  className="flex-1 bg-red-500/20 text-red-600 border border-red-500/30 py-2 rounded-xl text-sm font-bold hover:bg-red-500/30 disabled:opacity-50"
                 >
                   {deleting ? '削除中...' : '削除する'}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold hover:bg-gray-300"
+                  className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300"
                 >
                   キャンセル
                 </button>

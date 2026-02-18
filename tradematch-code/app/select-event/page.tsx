@@ -54,57 +54,57 @@ export default function SelectEventPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
-        <div className="text-white text-2xl">読み込み中...</div>
+      <main className="min-h-screen flex items-center justify-center bg-[#1a2d4a]">
+        <div className="text-slate-400 text-2xl">読み込み中...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-500 to-pink-500 p-4">
+    <main className="min-h-screen bg-[#1a2d4a] p-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-4">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">
             イベントを選択
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-400">
             参加するイベントを選んでください
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {events.map((event) => (
             <button
               key={event.id}
               onClick={() => handleSelectEvent(event.id)}
-              className="w-full bg-white rounded-3xl shadow-2xl p-6 text-left hover:shadow-xl transform hover:scale-105 transition-all"
+              className="w-full bg-slate-50 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500 p-6 text-left hover:bg-slate-200 transition-colors"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">
                 {event.name}
               </h2>
-              <p className="text-purple-600 font-semibold mb-2">
+              <p className="text-indigo-600 font-semibold mb-2">
                 {event.artist_name}
               </p>
               {event.event_date && (
-                <p className="text-gray-600 text-sm">
-                  📅 {new Date(event.event_date).toLocaleDateString('ja-JP')}
+                <p className="text-slate-400 text-sm">
+                  {new Date(event.event_date).toLocaleDateString('ja-JP')}
                 </p>
               )}
               {event.venue && (
-                <p className="text-gray-600 text-sm">
-                  📍 {event.venue}
+                <p className="text-slate-500 text-sm">
+                  {event.venue}
                 </p>
               )}
               {(event.register_start || event.register_end) && (
-                <p className="text-gray-500 text-xs mt-1">
-                  📝 登録: {event.register_start ? formatDateTime(event.register_start) : ''}
+                <p className="text-slate-500 text-xs mt-1">
+                  登録: {event.register_start ? formatDateTime(event.register_start) : ''}
                   {event.register_start && event.register_end ? ' 〜 ' : ''}
                   {event.register_end ? formatDateTime(event.register_end) : ''}
                 </p>
               )}
               {(event.trade_start || event.trade_end) && (
-                <p className="text-gray-500 text-xs mt-1">
-                  🔄 交換: {event.trade_start ? formatDateTime(event.trade_start) : ''}
+                <p className="text-slate-500 text-xs mt-1">
+                  交換: {event.trade_start ? formatDateTime(event.trade_start) : ''}
                   {event.trade_start && event.trade_end ? ' 〜 ' : ''}
                   {event.trade_end ? formatDateTime(event.trade_end) : ''}
                 </p>

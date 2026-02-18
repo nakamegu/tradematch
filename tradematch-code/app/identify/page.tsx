@@ -7,6 +7,7 @@ import type { Match, Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
+import { User, Lightbulb, Zap, Check, Eye } from 'lucide-react';
 
 export default function IdentifyPage() {
   const [matchData, setMatchData] = useState<any>(null);
@@ -291,8 +292,8 @@ export default function IdentifyPage() {
       }`}
       style={{ backgroundColor: matchData.colorCode }}
     >
-      <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl text-center max-w-md w-full">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">
+      <div className="bg-slate-50/95 backdrop-blur-sm rounded-2xl p-8 shadow-sm text-center max-w-md w-full">
+        <h1 className="text-3xl font-bold mb-6 text-slate-800">
           交換相手を見つけてください
         </h1>
 
@@ -300,12 +301,12 @@ export default function IdentifyPage() {
         {statusLabel && (
           <div className={`inline-block px-4 py-2 rounded-full text-sm font-bold mb-4 ${
             matchRecord?.status === 'completed'
-              ? 'bg-green-100 text-green-800'
+              ? 'bg-emerald-500/20 text-emerald-600'
               : matchRecord?.status === 'accepted'
-              ? 'bg-blue-100 text-blue-800'
+              ? 'bg-blue-500/20 text-blue-600'
               : matchRecord?.status === 'cancelled'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
+              ? 'bg-red-500/20 text-red-600'
+              : 'bg-amber-500/20 text-amber-600'
           }`}>
             {statusLabel}
           </div>
@@ -313,21 +314,21 @@ export default function IdentifyPage() {
 
         {/* Opponent info */}
         <div className="my-6">
-          <div className="text-7xl mb-3">👋</div>
-          <p className="text-2xl font-bold text-gray-800">{matchData.nickname}</p>
+          <User className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+          <p className="text-2xl font-bold text-slate-800">{matchData.nickname}</p>
           {matchData.distance > 0 && (
-            <p className="text-gray-600 mt-1">約 {matchData.distance}m</p>
+            <p className="text-slate-400 mt-1">約 {matchData.distance}m</p>
           )}
         </div>
 
         {/* Color code */}
-        <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-          <p className="text-sm text-gray-600 mb-3 font-medium">識別カラー</p>
+        <div className="bg-slate-100 rounded-2xl p-6 mb-6">
+          <p className="text-sm text-slate-400 mb-3 font-medium">識別カラー</p>
           <div
-            className="w-40 h-40 mx-auto rounded-2xl shadow-xl transform hover:scale-105 transition-transform"
+            className="w-40 h-40 mx-auto rounded-2xl shadow-sm"
             style={{ backgroundColor: matchData.colorCode }}
           />
-          <p className="text-xl font-mono font-bold mt-4 text-gray-800">
+          <p className="text-xl font-mono font-bold mt-4 text-slate-700">
             {matchData.colorCode}
           </p>
         </div>
@@ -346,62 +347,63 @@ export default function IdentifyPage() {
         )}
 
         {/* Instructions */}
-        <div className="bg-blue-50 rounded-xl p-4 mb-6">
-          <p className="text-sm text-gray-700 leading-relaxed">
-            💡 この色を画面に表示して、会場で相手を探してください。
-            同じ色の画面を持っている人があなたの交換相手です！
+        <div className="bg-slate-100 border border-slate-300 rounded-xl p-4 mb-6">
+          <p className="text-sm text-slate-600 leading-relaxed flex items-start gap-2">
+            <Lightbulb className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+            <span>この色を画面に表示して、会場で相手を探してください。
+            同じ色の画面を持っている人があなたの交換相手です！</span>
           </p>
         </div>
 
         {/* Action buttons */}
         <button
           onClick={handleFlash}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all mb-3"
+          className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-4 rounded-xl font-bold text-lg transition-colors mb-3 flex items-center justify-center gap-2"
         >
-          ✨ 画面を点滅させる
+          <Zap className="w-5 h-5" /> 画面を点滅させる
         </button>
 
         {matchRecord?.status !== 'completed' ? (
           <button
             onClick={handleComplete}
-            className="w-full bg-green-500 text-white py-3 rounded-full font-semibold hover:bg-green-600 transition-colors mb-3"
+            className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors mb-3 flex items-center justify-center gap-2"
           >
-            ✓ 交換完了
+            <Check className="w-5 h-5" /> 交換完了
           </button>
         ) : (
           <>
-            <div className="w-full bg-green-100 text-green-800 py-3 rounded-full font-semibold mb-3">
-              ✓ 交換完了済み
+            <div className="w-full bg-emerald-500/20 text-emerald-600 py-3 rounded-xl font-semibold mb-3 flex items-center justify-center gap-2">
+              <Check className="w-5 h-5" /> 交換完了済み
             </div>
 
             {/* Trade summary — editable quantities */}
             {matchData.groupMatches && matchData.groupMatches.length > 0 && (
-              <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-left">
-                <p className="text-sm font-bold text-gray-700 mb-2">
+              <div className="bg-slate-100 rounded-xl p-4 mb-4 text-left">
+                <p className="text-sm font-bold text-slate-600 mb-2">
                   交換内容{!qtyConfirmed && ' (数量を調整できます)'}
                 </p>
                 {matchData.groupMatches.map((gm: any, i: number) => (
                   <div key={i} className="mb-2 last:mb-0">
                     <div className="flex gap-2 text-xs">
-                      <div className="flex-1 bg-purple-50 rounded-lg p-2">
-                        <p className="font-semibold text-purple-700 mb-1">渡したもの</p>
+                      <div className="flex-1 bg-slate-50 rounded-lg p-2">
+                        <p className="font-semibold text-indigo-600 mb-1">渡したもの</p>
                         {gm.youOffer?.map((item: any, j: number) => {
                           const key = `${i}-give-${j}`;
                           const qty = tradedQty[key] ?? 1;
                           const max = item.quantity || 1;
                           return (
-                            <div key={j} className="flex items-center justify-between text-gray-700 mb-1">
+                            <div key={j} className="flex items-center justify-between text-slate-600 mb-1">
                               <span className="truncate mr-1">{item.name}</span>
                               {!qtyConfirmed ? (
                                 <span className="flex items-center gap-1 shrink-0">
                                   <button
                                     onClick={() => updateTradedQty(key, -1, max)}
-                                    className="w-5 h-5 rounded bg-purple-200 text-purple-800 font-bold leading-none"
+                                    className="w-5 h-5 rounded bg-slate-200 text-slate-600 font-bold leading-none"
                                   >-</button>
                                   <span className="w-4 text-center font-bold">{qty}</span>
                                   <button
                                     onClick={() => updateTradedQty(key, 1, max)}
-                                    className="w-5 h-5 rounded bg-purple-200 text-purple-800 font-bold leading-none"
+                                    className="w-5 h-5 rounded bg-slate-200 text-slate-600 font-bold leading-none"
                                   >+</button>
                                 </span>
                               ) : (
@@ -411,25 +413,25 @@ export default function IdentifyPage() {
                           );
                         })}
                       </div>
-                      <div className="flex-1 bg-pink-50 rounded-lg p-2">
-                        <p className="font-semibold text-pink-700 mb-1">もらったもの</p>
+                      <div className="flex-1 bg-slate-50 rounded-lg p-2">
+                        <p className="font-semibold text-indigo-600 mb-1">もらったもの</p>
                         {gm.theyOffer?.map((item: any, j: number) => {
                           const key = `${i}-get-${j}`;
                           const qty = tradedQty[key] ?? 1;
                           const max = item.quantity || 1;
                           return (
-                            <div key={j} className="flex items-center justify-between text-gray-700 mb-1">
+                            <div key={j} className="flex items-center justify-between text-slate-600 mb-1">
                               <span className="truncate mr-1">{item.name}</span>
                               {!qtyConfirmed ? (
                                 <span className="flex items-center gap-1 shrink-0">
                                   <button
                                     onClick={() => updateTradedQty(key, -1, max)}
-                                    className="w-5 h-5 rounded bg-pink-200 text-pink-800 font-bold leading-none"
+                                    className="w-5 h-5 rounded bg-slate-200 text-slate-600 font-bold leading-none"
                                   >-</button>
                                   <span className="w-4 text-center font-bold">{qty}</span>
                                   <button
                                     onClick={() => updateTradedQty(key, 1, max)}
-                                    className="w-5 h-5 rounded bg-pink-200 text-pink-800 font-bold leading-none"
+                                    className="w-5 h-5 rounded bg-slate-200 text-slate-600 font-bold leading-none"
                                   >+</button>
                                 </span>
                               ) : (
@@ -445,7 +447,7 @@ export default function IdentifyPage() {
                 {!qtyConfirmed && (
                   <button
                     onClick={handleConfirmQty}
-                    className="w-full mt-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 rounded-xl font-semibold text-sm hover:shadow-lg transition-all"
+                    className="w-full mt-3 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-xl font-semibold text-sm transition-colors"
                   >
                     数量を確定
                   </button>
@@ -455,13 +457,13 @@ export default function IdentifyPage() {
 
             <button
               onClick={handleContinueTrade}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-full font-semibold hover:shadow-xl transition-all mb-3"
+              className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-semibold transition-colors mb-3"
             >
               続きの交換へ
             </button>
             <button
               onClick={handleGoHome}
-              className="w-full bg-gray-400 text-white py-3 rounded-full font-semibold hover:bg-gray-500 transition-colors mb-3"
+              className="w-full bg-slate-100 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors mb-3"
             >
               トップに戻る
             </button>
@@ -470,17 +472,19 @@ export default function IdentifyPage() {
 
         <button
           onClick={() => router.push('/matching')}
-          className="w-full bg-gray-200 text-gray-700 py-3 rounded-full font-semibold hover:bg-gray-300 transition-colors"
+          className="w-full bg-slate-100 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors"
         >
-          ← 戻る
+          戻る
         </button>
       </div>
 
       {/* How to find */}
       <div className="mt-8 max-w-md">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4">
-          <h3 className="font-bold text-gray-800 mb-2">🔍 相手の見つけ方</h3>
-          <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+        <div className="bg-slate-50/90 backdrop-blur-sm rounded-2xl p-4">
+          <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+            <Eye className="w-5 h-5 text-indigo-600" /> 相手の見つけ方
+          </h3>
+          <ol className="text-sm text-slate-600 space-y-1 list-decimal list-inside">
             <li>画面を目立つように掲げる</li>
             <li>同じ色の画面を探す</li>
             <li>お互いに確認したら交換開始！</li>

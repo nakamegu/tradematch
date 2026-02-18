@@ -55,8 +55,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-500">読み込み中...</p>
+      <div className="min-h-screen bg-[#1a2d4a] flex items-center justify-center">
+        <p className="text-slate-400">読み込み中...</p>
       </div>
     )
   }
@@ -66,33 +66,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-[#1a2d4a]">
+      <header className="bg-slate-800 border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <a href="/admin" className="text-lg font-bold text-blue-600">
+            <a href="/admin" className="text-lg font-bold text-indigo-400">
               トレマチ管理
             </a>
             <nav className="flex gap-4">
               <a
                 href="/admin/events"
-                className={`text-sm ${pathname === '/admin/events' ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}
+                className={`text-sm ${pathname === '/admin/events' ? 'text-indigo-400 font-medium' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 イベント管理
               </a>
               <a
                 href="/admin/goods"
-                className={`text-sm ${pathname === '/admin/goods' ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}
+                className={`text-sm ${pathname === '/admin/goods' ? 'text-indigo-400 font-medium' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 グッズ管理
               </a>
             </nav>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{userEmail}</span>
+            <span className="text-sm text-slate-500">{userEmail}</span>
             <button
               onClick={handleLogout}
-              className="text-sm text-red-600 hover:text-red-800"
+              className="text-sm text-red-400 hover:text-red-300"
             >
               ログアウト
             </button>
