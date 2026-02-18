@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { getCurrentUserId } from '@/lib/auth';
 import type { Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
@@ -65,7 +66,7 @@ export default function MatchingPage() {
 
   const searchMatches = useCallback(async (myGroups: TradeGroup[]) => {
     try {
-      const userId = localStorage.getItem('userId');
+      const userId = await getCurrentUserId();
       if (!userId) return;
 
       const { data: otherUsers, error: matchError } = await supabase
@@ -179,42 +180,32 @@ export default function MatchingPage() {
     lng: number
   ) => {
     try {
-      let userId = localStorage.getItem('userId');
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        console.error('No auth session');
+        setIsSearching(false);
+        return;
+      }
 
-      if (userId) {
-        await supabase
-          .from('users')
-          .update({
-            nickname,
-            is_active: true,
-            last_active: new Date().toISOString(),
-          })
-          .eq('id', userId);
-      } else {
-        const { data: newUser, error } = await supabase
-          .from('users')
-          .insert({
-            nickname,
-            is_active: true,
-            last_active: new Date().toISOString(),
-          })
-          .select('id')
-          .single();
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert({
+          id: userId,
+          nickname,
+          is_active: true,
+          last_active: new Date().toISOString(),
+        });
 
-        if (error || !newUser) {
-          console.error('Error creating user:', error);
-          setIsSearching(false);
-          return;
-        }
-        userId = newUser.id;
-        localStorage.setItem('userId', userId!);
+      if (upsertError) {
+        console.error('Error upserting user:', upsertError);
+        setIsSearching(false);
+        return;
       }
 
       setMyLocation({ lat, lng });
 
       if (lat !== 0 || lng !== 0) {
         await supabase.rpc('update_user_location', {
-          user_id_input: userId,
           lat,
           lng,
         }).then(({ error }) => {
@@ -240,7 +231,7 @@ export default function MatchingPage() {
         // Have items
         for (const [goodsId, quantity] of Object.entries(group.have)) {
           userGoodsRows.push({
-            user_id: userId!,
+            user_id: userId,
             goods_id: goodsId,
             type: 'have',
             quantity,
@@ -250,7 +241,7 @@ export default function MatchingPage() {
         // Want items — quantity stores the group's wantQuantity
         for (const goodsId of group.wantItems) {
           userGoodsRows.push({
-            user_id: userId!,
+            user_id: userId,
             goods_id: goodsId,
             type: 'want',
             quantity: group.wantQuantity,
@@ -277,7 +268,7 @@ export default function MatchingPage() {
     if (prevInAreaRef.current === inArea) return;
     prevInAreaRef.current = inArea;
 
-    const userId = localStorage.getItem('userId');
+    const userId = await getCurrentUserId();
     if (!userId) return;
 
     await supabase
@@ -339,10 +330,8 @@ export default function MatchingPage() {
             startMatching(lat, lng);
           } else {
             // Update location in DB
-            const userId = localStorage.getItem('userId');
-            if (userId && (lat !== 0 || lng !== 0)) {
+            if (lat !== 0 || lng !== 0) {
               supabase.rpc('update_user_location', {
-                user_id_input: userId,
                 lat,
                 lng,
               });
@@ -382,9 +371,9 @@ export default function MatchingPage() {
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'user_goods' },
-          (payload) => {
+          async (payload) => {
             console.log('[Realtime] user_goods INSERT received:', payload.new);
-            const currentUserId = localStorage.getItem('userId');
+            const currentUserId = await getCurrentUserId();
             const inserted = payload.new as { user_id: string };
             if (inserted.user_id === currentUserId) return;
 
@@ -409,7 +398,7 @@ export default function MatchingPage() {
           { event: 'INSERT', schema: 'public', table: 'matches' },
           async (payload) => {
             console.log('[Realtime] matches INSERT received:', payload.new);
-            const currentUserId = localStorage.getItem('userId');
+            const currentUserId = await getCurrentUserId();
             const newMatch = payload.new as {
               id: string;
               user1_id: string;
@@ -467,7 +456,7 @@ export default function MatchingPage() {
     const match = matches.find((m) => m.id === matchUserId);
     if (!match) return;
 
-    const userId = localStorage.getItem('userId');
+    const userId = await getCurrentUserId();
     if (!userId) return;
 
     const { data: matchRecord, error } = await supabase

@@ -2,16 +2,25 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ensureAuth } from '@/lib/auth';
 
 export default function Home() {
   const [nickname, setNickname] = useState('');
   const router = useRouter();
 
-  const handleStart = () => {
+  const [starting, setStarting] = useState(false);
+
+  const handleStart = async () => {
     if (nickname.trim()) {
-      // ニックネームをローカルストレージに保存
-      localStorage.setItem('nickname', nickname);
-      router.push('/select-event');
+      setStarting(true);
+      try {
+        await ensureAuth();
+        localStorage.setItem('nickname', nickname);
+        router.push('/select-event');
+      } catch (err) {
+        console.error('Auth error:', err);
+        setStarting(false);
+      }
     }
   };
 
@@ -42,7 +51,7 @@ export default function Home() {
 
           <button
             onClick={handleStart}
-            disabled={!nickname.trim()}
+            disabled={!nickname.trim() || starting}
             className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-4 rounded-xl font-bold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             はじめる
