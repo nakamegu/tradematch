@@ -268,6 +268,26 @@ export default function MatchingPage() {
     }
   }, [searchMatches]);
 
+  // Continuous location watch: update is_active based on area
+  const watchIdRef = useRef<number | null>(null);
+  const prevInAreaRef = useRef<boolean | null>(null);
+
+  const updateActiveStatus = useCallback(async (inArea: boolean) => {
+    // Only update DB if status actually changed
+    if (prevInAreaRef.current === inArea) return;
+    prevInAreaRef.current = inArea;
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    await supabase
+      .from('users')
+      .update({ is_active: inArea })
+      .eq('id', userId);
+
+    console.log(`[Location] is_active → ${inArea}`);
+  }, []);
+
   useEffect(() => {
     const tradeGroupsData = localStorage.getItem('tradeGroups');
     const nickname = localStorage.getItem('nickname');
@@ -299,19 +319,55 @@ export default function MatchingPage() {
     const myGroups: TradeGroup[] = JSON.parse(tradeGroupsData);
     tradeGroupsRef.current = myGroups;
 
+    let initialMatchDone = false;
+
     const startMatching = (lat: number, lng: number) => {
       setLocationGranted(true);
       registerAndMatch(nickname, myGroups, lat, lng);
+      initialMatchDone = true;
     };
 
     if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => startMatching(position.coords.latitude, position.coords.longitude),
-        () => startMatching(0, 0)
+      // Use watchPosition for continuous location tracking
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setMyLocation({ lat, lng });
+
+          if (!initialMatchDone) {
+            startMatching(lat, lng);
+          } else {
+            // Update location in DB
+            const userId = localStorage.getItem('userId');
+            if (userId && (lat !== 0 || lng !== 0)) {
+              supabase.rpc('update_user_location', {
+                user_id_input: userId,
+                lat,
+                lng,
+              });
+            }
+          }
+        },
+        () => {
+          if (!initialMatchDone) startMatching(0, 0);
+        },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
       );
     } else {
       startMatching(0, 0);
     }
+
+    // Fallback: poll location every 60s for when watchPosition doesn't fire (stationary)
+    const locationPollId = setInterval(() => {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => {},
+          { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
+        );
+      }
+    }, 60000);
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
@@ -391,14 +447,21 @@ export default function MatchingPage() {
       if (debounceTimer) clearTimeout(debounceTimer);
       channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
       channelsRef.current = [];
+      clearInterval(locationPollId);
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
     };
   }, [router, registerAndMatch, searchMatches]);
 
   useEffect(() => {
     if (eventData && myLocation.lat !== 0) {
-      setIsInArea(isWithinEventArea(myLocation.lat, myLocation.lng, eventData));
+      const inArea = isWithinEventArea(myLocation.lat, myLocation.lng, eventData);
+      setIsInArea(inArea);
+      updateActiveStatus(inArea);
     }
-  }, [myLocation, eventData]);
+  }, [myLocation, eventData, updateActiveStatus]);
 
   const handleMatch = async (matchUserId: string) => {
     const match = matches.find((m) => m.id === matchUserId);
