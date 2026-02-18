@@ -80,11 +80,8 @@ export default function SelectEventPage() {
     <main className="min-h-screen bg-[#1a2d4a] p-4">
       <div className="max-w-2xl mx-auto">
         <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">
-            イベントを選択
-          </h1>
           <p className="text-slate-400">
-            参加するイベントを選んでください
+            参加する公演を選んでください
           </p>
         </div>
 

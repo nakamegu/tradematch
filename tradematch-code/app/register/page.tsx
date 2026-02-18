@@ -251,8 +251,8 @@ export default function RegisterPage() {
       <div className="max-w-4xl mx-auto">
         {/* ヘッダー */}
         <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">グッズ登録</h1>
-          <p className="text-slate-400">{eventName}</p>
+          <h1 className="text-xl font-bold text-slate-800 mb-2">{eventName}</h1>
+          <p className="text-slate-400">交換したいグッズを登録しましょう</p>
         </div>
 
         {/* 交換セット一覧 */}
@@ -295,10 +295,10 @@ export default function RegisterPage() {
 
               {isExpanded && (
                 <div className="p-4">
-                  {/* 出すグッズ */}
+                  {/* 譲るグッズ */}
                   <div className="mb-6">
                     <h3 className="text-lg font-bold text-indigo-600 mb-3 flex items-center gap-2">
-                      出すグッズ
+                      【譲】
                       <span className="text-sm font-normal text-slate-400">
                         ({Object.keys(group.have).length}種類 / 合計{haveCount}個)
                       </span>
@@ -322,7 +322,7 @@ export default function RegisterPage() {
                   {/* 欲しいグッズ */}
                   <div>
                     <h3 className="text-lg font-bold text-indigo-600 mb-3 flex items-center gap-2">
-                      欲しいグッズ
+                      【求】
                       <span className="text-sm font-normal text-slate-400">
                         ({wantCount}種類から)
                       </span>
