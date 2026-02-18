@@ -7,7 +7,7 @@ import type { Match, Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
-import { User, Lightbulb, Zap, Check, Eye } from 'lucide-react';
+import { User, Lightbulb, Zap, Check, Eye, X } from 'lucide-react';
 
 export default function IdentifyPage() {
   const [matchData, setMatchData] = useState<any>(null);
@@ -263,6 +263,18 @@ export default function IdentifyPage() {
     }
   };
 
+  const handleCancel = async () => {
+    const matchRecordId = matchData?.matchRecordId;
+    if (matchRecordId) {
+      await supabase
+        .from('matches')
+        .update({ status: 'cancelled' })
+        .eq('id', matchRecordId);
+    }
+    localStorage.removeItem('currentMatch');
+    router.push('/matching');
+  };
+
   const handleConfirmQty = () => {
     updateTradeGroupsAfterTrade();
     setQtyConfirmed(true);
@@ -363,13 +375,25 @@ export default function IdentifyPage() {
           <Zap className="w-5 h-5" /> 画面を点滅させる
         </button>
 
-        {matchRecord?.status !== 'completed' ? (
-          <button
-            onClick={handleComplete}
-            className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors mb-3 flex items-center justify-center gap-2"
-          >
-            <Check className="w-5 h-5" /> 交換完了
-          </button>
+        {matchRecord?.status === 'cancelled' ? (
+          <div className="w-full bg-red-500/20 text-red-600 py-3 rounded-xl font-semibold mb-3 flex items-center justify-center gap-2">
+            <X className="w-5 h-5" /> キャンセル済み
+          </div>
+        ) : matchRecord?.status !== 'completed' ? (
+          <>
+            <button
+              onClick={handleComplete}
+              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors mb-3 flex items-center justify-center gap-2"
+            >
+              <Check className="w-5 h-5" /> 交換完了
+            </button>
+            <button
+              onClick={handleCancel}
+              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 py-3 rounded-xl font-semibold transition-colors mb-3 flex items-center justify-center gap-2"
+            >
+              <X className="w-5 h-5" /> 見つからない・キャンセル
+            </button>
+          </>
         ) : (
           <>
             <div className="w-full bg-emerald-500/20 text-emerald-600 py-3 rounded-xl font-semibold mb-3 flex items-center justify-center gap-2">
@@ -470,12 +494,14 @@ export default function IdentifyPage() {
           </>
         )}
 
-        <button
-          onClick={() => router.push('/matching')}
-          className="w-full bg-slate-100 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors"
-        >
-          戻る
-        </button>
+        {(matchRecord?.status === 'cancelled' || matchRecord?.status === 'completed') && (
+          <button
+            onClick={() => { localStorage.removeItem('currentMatch'); router.push('/matching'); }}
+            className="w-full bg-slate-100 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors"
+          >
+            マッチング画面に戻る
+          </button>
+        )}
       </div>
 
       {/* How to find */}
