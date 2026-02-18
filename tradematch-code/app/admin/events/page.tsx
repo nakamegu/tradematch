@@ -17,6 +17,7 @@ type EventForm = {
   artist_name: string
   event_date: string
   venue: string
+  image_url: string
   is_active: boolean
   register_start: string
   register_end: string
@@ -31,6 +32,7 @@ const emptyForm: EventForm = {
   artist_name: '',
   event_date: '',
   venue: '',
+  image_url: '',
   is_active: true,
   register_start: '',
   register_end: '',
@@ -105,6 +107,7 @@ export default function EventsManagementPage() {
       artist_name: form.artist_name,
       event_date: form.event_date,
       venue: form.venue,
+      image_url: form.image_url || null,
       is_active: form.is_active,
       register_start: localToISO(form.register_start),
       register_end: localToISO(form.register_end),
@@ -158,6 +161,7 @@ export default function EventsManagementPage() {
       artist_name: event.artist_name,
       event_date: event.event_date,
       venue: event.venue || '',
+      image_url: event.image_url || '',
       is_active: event.is_active,
       register_start: isoToLocal(event.register_start),
       register_end: isoToLocal(event.register_end),
@@ -263,6 +267,22 @@ export default function EventsManagementPage() {
                 placeholder="例: 東京ドーム"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">イベント画像URL</label>
+            <input
+              type="url"
+              value={form.image_url}
+              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
+              placeholder="https://example.com/image.jpg"
+            />
+            {form.image_url && (
+              <div className="mt-2 h-32 rounded-xl overflow-hidden bg-slate-200">
+                <img src={form.image_url} alt="プレビュー" className="w-full h-full object-cover" />
+              </div>
+            )}
           </div>
 
           {/* 登録可能期間 */}
