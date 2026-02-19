@@ -120,6 +120,12 @@ export default function EventEntryPage() {
             はじめる
           </button>
         </div>
+
+        <div className="mt-4 text-center">
+          <a href="/privacy" className="text-slate-400 text-xs hover:text-slate-600">
+            データの取り扱いについて
+          </a>
+        </div>
       </div>
     </main>
   );
