@@ -93,9 +93,19 @@ export default function MatchingPage() {
         goodsNameMap[g.id] = g.name;
       });
 
+      // Exclude users with active (pending/accepted/completed) matches
+      const [{ data: matchesAsUser1 }, { data: matchesAsUser2 }] = await Promise.all([
+        supabase.from('matches').select('user2_id').eq('user1_id', userId).in('status', ['pending', 'accepted']),
+        supabase.from('matches').select('user1_id').eq('user2_id', userId).in('status', ['pending', 'accepted']),
+      ]);
+      const excludeIds = new Set<string>();
+      (matchesAsUser1 || []).forEach((m: any) => excludeIds.add(m.user2_id));
+      (matchesAsUser2 || []).forEach((m: any) => excludeIds.add(m.user1_id));
+
       const foundMatches: MatchResult[] = [];
 
       for (const otherUser of otherUsers || []) {
+        if (excludeIds.has(otherUser.id)) continue;
         const { data: theirGoods } = await supabase
           .from('user_goods')
           .select('goods_id, type, quantity, group_id')
@@ -363,6 +373,69 @@ export default function MatchingPage() {
       }
     }, 60000);
 
+    // Shared function to process an incoming match request
+    const processIncomingMatch = async (matchRow: { id: string; user1_id: string; user2_id: string; color_code: string | null }, currentUserId: string) => {
+      const [requesterRes, theirGoodsRes, myGoodsRes, goodsNamesRes] = await Promise.all([
+        supabase.from('users').select('nickname').eq('id', matchRow.user1_id).single(),
+        supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', matchRow.user1_id),
+        supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', currentUserId),
+        supabase.from('goods_master').select('id, name'),
+      ]);
+
+      const nameMap: Record<string, string> = {};
+      (goodsNamesRes.data || []).forEach((g: { id: string; name: string }) => { nameMap[g.id] = g.name; });
+
+      const theirHave: Record<string, number> = {};
+      const theirWant = new Set<string>();
+      for (const row of theirGoodsRes.data || []) {
+        if (row.type === 'have') theirHave[row.goods_id] = row.quantity || 1;
+        else theirWant.add(row.goods_id);
+      }
+
+      const myHave = new Set<string>();
+      const myWant = new Set<string>();
+      for (const row of myGoodsRes.data || []) {
+        if (row.type === 'have') myHave.add(row.goods_id);
+        else myWant.add(row.goods_id);
+      }
+
+      const theyOffer = Object.keys(theirHave)
+        .filter((id) => myWant.has(id))
+        .map((id) => ({ name: nameMap[id] || id, quantity: theirHave[id] }));
+      const theyWant = Array.from(theirWant)
+        .filter((id) => myHave.has(id))
+        .map((id) => ({ name: nameMap[id] || id, quantity: 1 }));
+
+      setIncomingRequest({
+        matchRecordId: matchRow.id,
+        requesterName: requesterRes.data?.nickname || '誰か',
+        colorCode: matchRow.color_code,
+        requesterId: matchRow.user1_id,
+        theyOffer,
+        theyWant,
+      });
+    };
+
+    // Poll for incoming match requests every 5 seconds
+    let lastSeenMatchId: string | null = null;
+    const matchRequestPollId = setInterval(async () => {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
+      const { data: pending } = await supabase
+        .from('matches')
+        .select('id, user1_id, user2_id, color_code')
+        .eq('user2_id', userId)
+        .eq('status', 'pending')
+        .order('matched_at', { ascending: false })
+        .limit(1);
+
+      if (pending && pending.length > 0 && pending[0].id !== lastSeenMatchId) {
+        lastSeenMatchId = pending[0].id;
+        processIncomingMatch(pending[0], userId);
+      }
+    }, 5000);
+
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
 
@@ -411,45 +484,7 @@ export default function MatchingPage() {
               color_code: string | null;
             };
             if (newMatch.user2_id === currentUserId) {
-              const [requesterRes, theirGoodsRes, myGoodsRes, goodsNamesRes] = await Promise.all([
-                supabase.from('users').select('nickname').eq('id', newMatch.user1_id).single(),
-                supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', newMatch.user1_id),
-                supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', currentUserId),
-                supabase.from('goods_master').select('id, name'),
-              ]);
-
-              const nameMap: Record<string, string> = {};
-              (goodsNamesRes.data || []).forEach((g: { id: string; name: string }) => { nameMap[g.id] = g.name; });
-
-              const theirHave: Record<string, number> = {};
-              const theirWant = new Set<string>();
-              for (const row of theirGoodsRes.data || []) {
-                if (row.type === 'have') theirHave[row.goods_id] = row.quantity || 1;
-                else theirWant.add(row.goods_id);
-              }
-
-              const myHave = new Set<string>();
-              const myWant = new Set<string>();
-              for (const row of myGoodsRes.data || []) {
-                if (row.type === 'have') myHave.add(row.goods_id);
-                else myWant.add(row.goods_id);
-              }
-
-              const theyOffer = Object.keys(theirHave)
-                .filter((id) => myWant.has(id))
-                .map((id) => ({ name: nameMap[id] || id, quantity: theirHave[id] }));
-              const theyWant = Array.from(theirWant)
-                .filter((id) => myHave.has(id))
-                .map((id) => ({ name: nameMap[id] || id, quantity: 1 }));
-
-              setIncomingRequest({
-                matchRecordId: newMatch.id,
-                requesterName: requesterRes.data?.nickname || '誰か',
-                colorCode: newMatch.color_code,
-                requesterId: newMatch.user1_id,
-                theyOffer,
-                theyWant,
-              });
+              processIncomingMatch(newMatch, currentUserId);
             }
           }
         )
@@ -469,6 +504,7 @@ export default function MatchingPage() {
       channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
       channelsRef.current = [];
       clearInterval(locationPollId);
+      clearInterval(matchRequestPollId);
       if (watchIdRef.current != null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;

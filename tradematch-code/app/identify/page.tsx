@@ -441,6 +441,24 @@ export default function IdentifyPage() {
         localStorage.removeItem('tradeGroups');
         if (eventId) localStorage.removeItem(`tradeGroups_${eventId}`);
       }
+
+      // Also update user_goods in DB
+      getCurrentUserId().then(async (userId) => {
+        if (!userId) return;
+        await supabase.from('user_goods').delete().eq('user_id', userId);
+        const rows: { user_id: string; goods_id: string; type: 'have' | 'want'; quantity: number; group_id: number }[] = [];
+        filtered.forEach((group: any, groupIdx: number) => {
+          for (const [goodsId, quantity] of Object.entries(group.have)) {
+            rows.push({ user_id: userId, goods_id: goodsId, type: 'have', quantity: quantity as number, group_id: groupIdx });
+          }
+          for (const goodsId of group.wantItems || []) {
+            rows.push({ user_id: userId, goods_id: goodsId, type: 'want', quantity: group.wantQuantity || 1, group_id: groupIdx });
+          }
+        });
+        if (rows.length > 0) {
+          await supabase.from('user_goods').insert(rows);
+        }
+      });
     } catch {
       // ignore parse errors
     }
