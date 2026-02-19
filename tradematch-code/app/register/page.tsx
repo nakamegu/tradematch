@@ -78,8 +78,20 @@ export default function RegisterPage() {
     }
     setRestored(true);
 
+    // Check enable_trade_groups after event loads (will be applied via effect below)
     fetchGoods(eventId);
   }, [router]);
+
+  // When trade groups are disabled, force single group with 1:1 ratio
+  const tradeGroupsEnabled = eventData?.enable_trade_groups !== false;
+  useEffect(() => {
+    if (eventData && !tradeGroupsEnabled) {
+      setTradeGroups((prev) => {
+        const first = prev[0] || emptyGroup();
+        return [{ ...first, giveCount: 1, wantQuantity: 1 }];
+      });
+    }
+  }, [eventData, tradeGroupsEnabled]);
 
   // Auto-save tradeGroups to localStorage on every change (only after restore)
   useEffect(() => {
@@ -442,41 +454,43 @@ export default function RegisterPage() {
 
         {/* 交換セット一覧 */}
         {tradeGroups.map((group, idx) => {
-          const isExpanded = expandedGroup === idx;
+          const isExpanded = tradeGroupsEnabled ? expandedGroup === idx : true;
           const haveCount = Object.values(group.have).reduce((s, q) => s + q, 0);
           const wantCount = group.wantItems.length;
 
           return (
             <div key={idx} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 mb-4 overflow-hidden">
-              {/* グループヘッダー */}
-              <div
-                className="flex items-center justify-between p-4 cursor-pointer bg-slate-100"
-                onClick={() => setExpandedGroup(isExpanded ? -1 : idx)}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-indigo-600">
-                    交換セット {idx + 1}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
-                    {group.giveCount || 1}:{group.wantQuantity} 交換
-                  </span>
+              {/* グループヘッダー（交換セット有効時のみ表示） */}
+              {tradeGroupsEnabled && (
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer bg-slate-100"
+                  onClick={() => setExpandedGroup(isExpanded ? -1 : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-indigo-600">
+                      交換セット {idx + 1}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
+                      {group.giveCount || 1}:{group.wantQuantity} 交換
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {tradeGroups.length > 1 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeGroup(idx); }}
+                        className="w-8 h-8 rounded-full bg-red-500/20 text-red-600 font-bold text-sm flex items-center justify-center hover:bg-red-500/30"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-400" />
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {tradeGroups.length > 1 && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeGroup(idx); }}
-                      className="w-8 h-8 rounded-full bg-red-500/20 text-red-600 font-bold text-sm flex items-center justify-center hover:bg-red-500/30"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                  {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-slate-400" />
-                  )}
-                </div>
-              </div>
+              )}
 
               {isExpanded && (
                 <div className="p-4">
@@ -527,30 +541,32 @@ export default function RegisterPage() {
                       </div>
                     ))}
 
-                    {/* 交換比率 */}
-                    <div className="mt-4 bg-slate-100 border border-slate-300 rounded-xl p-3">
-                      <p className="text-sm font-semibold text-slate-600 mb-2">
-                        交換比率（譲る数 : 求める数）
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {RATIO_PRESETS.map(([g, w]) => {
-                          const isActive = (group.giveCount || 1) === g && group.wantQuantity === w;
-                          return (
-                            <button
-                              key={`${g}:${w}`}
-                              onClick={() => setRatio(idx, g, w)}
-                              className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-                                isActive
-                                  ? 'bg-indigo-500 text-white'
-                                  : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-200'
-                              }`}
-                            >
-                              {g}:{w}
-                            </button>
-                          );
-                        })}
+                    {/* 交換比率（交換セット有効時のみ表示） */}
+                    {tradeGroupsEnabled && (
+                      <div className="mt-4 bg-slate-100 border border-slate-300 rounded-xl p-3">
+                        <p className="text-sm font-semibold text-slate-600 mb-2">
+                          交換比率（譲る数 : 求める数）
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {RATIO_PRESETS.map(([g, w]) => {
+                            const isActive = (group.giveCount || 1) === g && group.wantQuantity === w;
+                            return (
+                              <button
+                                key={`${g}:${w}`}
+                                onClick={() => setRatio(idx, g, w)}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                                  isActive
+                                    ? 'bg-indigo-500 text-white'
+                                    : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                {g}:{w}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -558,13 +574,15 @@ export default function RegisterPage() {
           );
         })}
 
-        {/* 交換セット追加ボタン */}
-        <button
-          onClick={addGroup}
-          className="w-full bg-slate-50 py-3 rounded-xl font-bold text-lg border-2 border-dashed border-slate-300 text-slate-600 hover:bg-slate-200 transition-all mb-4 flex items-center justify-center gap-2"
-        >
-          <Plus className="w-5 h-5" /> 交換セットを追加
-        </button>
+        {/* 交換セット追加ボタン（交換セット有効時のみ表示） */}
+        {tradeGroupsEnabled && (
+          <button
+            onClick={addGroup}
+            className="w-full bg-slate-50 py-3 rounded-xl font-bold text-lg border-2 border-dashed border-slate-300 text-slate-600 hover:bg-slate-200 transition-all mb-4 flex items-center justify-center gap-2"
+          >
+            <Plus className="w-5 h-5" /> 交換セットを追加
+          </button>
+        )}
 
         {/* グッズリクエストボタン */}
         {eventData?.allow_goods_request !== false && (

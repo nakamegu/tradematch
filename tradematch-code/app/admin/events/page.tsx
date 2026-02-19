@@ -24,6 +24,7 @@ type EventForm = {
   trade_start: string
   trade_end: string
   allow_goods_request: boolean
+  enable_trade_groups: boolean
   locations: [LocationForm, LocationForm, LocationForm]
 }
 
@@ -39,6 +40,7 @@ const emptyForm: EventForm = {
   trade_start: '',
   trade_end: '',
   allow_goods_request: true,
+  enable_trade_groups: true,
   locations: [{ ...emptyLocation }, { ...emptyLocation }, { ...emptyLocation }],
 }
 
@@ -114,6 +116,7 @@ export default function EventsManagementPage() {
       trade_start: localToISO(form.trade_start),
       trade_end: localToISO(form.trade_end),
       allow_goods_request: form.allow_goods_request,
+      enable_trade_groups: form.enable_trade_groups,
       latitude: loc1.latitude ? parseFloat(loc1.latitude) : null,
       longitude: loc1.longitude ? parseFloat(loc1.longitude) : null,
       radius_km: loc1.radius_km ? parseFloat(loc1.radius_km) : 1.0,
@@ -168,6 +171,7 @@ export default function EventsManagementPage() {
       trade_start: isoToLocal(event.trade_start),
       trade_end: isoToLocal(event.trade_end),
       allow_goods_request: event.allow_goods_request !== false,
+      enable_trade_groups: event.enable_trade_groups !== false,
       locations: [
         {
           latitude: event.latitude != null ? String(event.latitude) : '',
@@ -404,6 +408,16 @@ export default function EventsManagementPage() {
             ))}
           </div>
 
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="enable_trade_groups"
+              checked={form.enable_trade_groups}
+              onChange={(e) => setForm({ ...form, enable_trade_groups: e.target.checked })}
+              className="rounded"
+            />
+            <label htmlFor="enable_trade_groups" className="text-sm text-slate-600">交換セット（複数グループ・比率指定）を有効にする</label>
+          </div>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"

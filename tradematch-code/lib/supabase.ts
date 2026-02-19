@@ -28,6 +28,7 @@ export type Event = {
   trade_start?: string
   trade_end?: string
   allow_goods_request?: boolean
+  enable_trade_groups?: boolean
 }
 
 export type GoodsMaster = {
