@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { supabase, Event, GoodsMaster } from '@/lib/supabase'
+import { supabase, Event, GoodsMaster, ImageCrop } from '@/lib/supabase'
 import { uploadGoodsImage } from '@/lib/upload'
+import ImageCropper from '@/components/ImageCropper'
+import CroppedImage from '@/components/CroppedImage'
 
 type GoodsForm = {
   name: string
   category: string
   description: string
   image_url: string
+  image_crop: ImageCrop | null
 }
 
 const emptyForm: GoodsForm = {
@@ -16,6 +19,7 @@ const emptyForm: GoodsForm = {
   category: '',
   description: '',
   image_url: '',
+  image_crop: null,
 }
 
 export default function GoodsManagementPage() {
@@ -31,6 +35,8 @@ export default function GoodsManagementPage() {
   const [uploading, setUploading] = useState(false)
   const [bulkText, setBulkText] = useState('')
   const [bulkMode, setBulkMode] = useState(false)
+  const [imageTab, setImageTab] = useState<'upload' | 'url'>('upload')
+  const [cropUrl, setCropUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -95,7 +101,11 @@ export default function GoodsManagementPage() {
     setSuccess('')
 
     const payload = {
-      ...form,
+      name: form.name,
+      category: form.category,
+      description: form.description,
+      image_url: form.image_url,
+      image_crop: form.image_crop,
       event_id: selectedEventId,
       is_official: true,
       status: 'active',
@@ -129,6 +139,8 @@ export default function GoodsManagementPage() {
     setForm(emptyForm)
     setEditingId(null)
     setSaving(false)
+    setImageTab('upload')
+    setCropUrl('')
     if (fileInputRef.current) fileInputRef.current.value = ''
     fetchGoods()
   }
@@ -184,12 +196,22 @@ export default function GoodsManagementPage() {
       category: goods.category,
       description: goods.description || '',
       image_url: goods.image_url || '',
+      image_crop: goods.image_crop || null,
     })
+    if (goods.image_crop && goods.image_url) {
+      setImageTab('url')
+      setCropUrl(goods.image_url)
+    } else {
+      setImageTab('upload')
+      setCropUrl('')
+    }
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setImageTab('upload')
+    setCropUrl('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -306,17 +328,72 @@ export default function GoodsManagementPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1">画像</label>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-indigo-500/20 file:text-indigo-600 hover:file:bg-indigo-500/30"
-              />
-              {uploading && <p className="text-sm text-slate-500 mt-1">アップロード中...</p>}
-              {form.image_url && (
-                <div className="mt-2 h-40 w-40 rounded-lg overflow-hidden bg-slate-200 flex items-center justify-center">
-                  <img src={form.image_url} alt="プレビュー" className="max-w-full max-h-full object-contain" />
+              <div className="flex gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setImageTab('upload')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium ${imageTab === 'upload' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-600'}`}
+                >
+                  ファイルアップロード
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageTab('url')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium ${imageTab === 'url' ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-600'}`}
+                >
+                  URL指定+切り抜き
+                </button>
+              </div>
+
+              {imageTab === 'upload' && (
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-indigo-500/20 file:text-indigo-600 hover:file:bg-indigo-500/30"
+                  />
+                  {uploading && <p className="text-sm text-slate-500 mt-1">アップロード中...</p>}
+                  {form.image_url && !form.image_crop && (
+                    <div className="mt-2 h-40 w-40 rounded-lg overflow-hidden bg-slate-200 flex items-center justify-center">
+                      <img src={form.image_url} alt="プレビュー" className="max-w-full max-h-full object-contain" />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {imageTab === 'url' && (
+                <div className="space-y-3">
+                  <input
+                    type="url"
+                    value={cropUrl}
+                    onChange={(e) => setCropUrl(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (cropUrl.trim()) {
+                        setForm({ ...form, image_url: cropUrl.trim(), image_crop: null })
+                      }
+                    }}
+                    disabled={!cropUrl.trim()}
+                    className="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-300 disabled:opacity-50"
+                  >
+                    画像を読み込む
+                  </button>
+                  {form.image_url && imageTab === 'url' && (
+                    <>
+                      <p className="text-xs text-slate-500">ドラッグで切り抜き範囲を選択（任意）</p>
+                      <ImageCropper
+                        imageUrl={form.image_url}
+                        initialCrop={form.image_crop}
+                        onCropChange={(crop) => setForm({ ...form, image_crop: crop })}
+                      />
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -395,7 +472,12 @@ export default function GoodsManagementPage() {
                 <tr key={g.id} className="hover:bg-slate-200">
                   <td className="px-4 py-3">
                     {g.image_url ? (
-                      <img src={g.image_url} alt={g.name} className="h-10 w-10 object-cover rounded" />
+                      <CroppedImage
+                        src={g.image_url}
+                        crop={g.image_crop}
+                        alt={g.name}
+                        className="h-10 w-10 object-cover rounded"
+                      />
                     ) : (
                       <div className="h-10 w-10 bg-slate-200 rounded flex items-center justify-center text-slate-500 text-xs">
                         No img

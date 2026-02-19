@@ -31,6 +31,15 @@ export type Event = {
   enable_trade_groups?: boolean
 }
 
+export type ImageCrop = {
+  x: number
+  y: number
+  width: number
+  height: number
+  naturalWidth: number
+  naturalHeight: number
+}
+
 export type GoodsMaster = {
   id: string
   event_id: string
@@ -38,6 +47,7 @@ export type GoodsMaster = {
   category: string
   description?: string
   image_url?: string
+  image_crop?: ImageCrop | null
   is_official: boolean
   status: string
 }

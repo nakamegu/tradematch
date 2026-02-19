@@ -6,8 +6,8 @@ import { supabase, GoodsMaster, Event } from '@/lib/supabase';
 import { getCurrentUserId } from '@/lib/auth';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import Image from 'next/image';
 import { Plus, X, ChevronUp, ChevronDown, Bell } from 'lucide-react';
+import CroppedImage from '@/components/CroppedImage';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -356,12 +356,20 @@ export default function RegisterPage() {
           >
             {good.image_url && (
               <div className="relative w-full aspect-square mb-1 bg-slate-200 rounded-lg overflow-hidden">
-                <Image
-                  src={good.image_url}
-                  alt={good.name}
-                  fill
-                  className="object-contain"
-                />
+                {good.image_crop ? (
+                  <CroppedImage
+                    src={good.image_url}
+                    crop={good.image_crop}
+                    alt={good.name}
+                    className="absolute inset-0 w-full h-full"
+                  />
+                ) : (
+                  <img
+                    src={good.image_url}
+                    alt={good.name}
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
+                )}
               </div>
             )}
             <p className="text-xs font-medium text-slate-700 leading-tight">
