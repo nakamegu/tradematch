@@ -526,6 +526,35 @@ export default function MatchingPage() {
     }
   }, [myLocation, eventData, updateActiveStatus]);
 
+  // Periodically refresh matched users' locations
+  useEffect(() => {
+    if (matches.length === 0) return;
+
+    const refreshLocations = async () => {
+      const matchIds = matches.map((m) => m.id);
+      const { data } = await supabase
+        .from('users')
+        .select('id, latitude, longitude')
+        .in('id', matchIds);
+
+      if (data && data.length > 0) {
+        const locationMap = new Map(data.map((u: { id: string; latitude: number; longitude: number }) => [u.id, u]));
+        setMatches((prev) =>
+          prev.map((m) => {
+            const updated = locationMap.get(m.id);
+            if (updated && (updated.latitude !== m.lat || updated.longitude !== m.lng)) {
+              return { ...m, lat: updated.latitude || 0, lng: updated.longitude || 0 };
+            }
+            return m;
+          })
+        );
+      }
+    };
+
+    const intervalId = setInterval(refreshLocations, 10000);
+    return () => clearInterval(intervalId);
+  }, [matches.length > 0 ? matches.map((m) => m.id).join(',') : '']);
+
   const [sendingRequest, setSendingRequest] = useState(false);
 
   const handleMatch = async (matchUserId: string) => {
@@ -765,30 +794,38 @@ export default function MatchingPage() {
                   ))}
                 </div>
 
-                {isInArea && myLocation.lat !== 0 && match.lat !== 0 && (
-                  <div className="mb-4" style={{ height: '150px' }}>
-                    <TradeMapWrapper
-                      myLat={myLocation.lat}
-                      myLng={myLocation.lng}
-                      otherLat={match.lat}
-                      otherLng={match.lng}
-                      otherName={match.nickname}
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const partnerInArea = eventData ? isWithinEventArea(match.lat, match.lng, eventData) : true;
+                  const bothInArea = isInArea && (match.lat === 0 || partnerInArea);
+                  return (
+                    <>
+                      {bothInArea && myLocation.lat !== 0 && match.lat !== 0 && (
+                        <div className="mb-4" style={{ height: '150px' }}>
+                          <TradeMapWrapper
+                            myLat={myLocation.lat}
+                            myLng={myLocation.lng}
+                            otherLat={match.lat}
+                            otherLng={match.lng}
+                            otherName={match.nickname}
+                          />
+                        </div>
+                      )}
 
-                {isInArea ? (
-                  <button
-                    onClick={() => handleMatch(match.id)}
-                    className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
-                  >
-                    この人と交換する
-                  </button>
-                ) : (
-                  <div className="w-full bg-slate-200 text-slate-400 py-3 rounded-xl font-bold text-center">
-                    会場エリア外のため交換できません
-                  </div>
-                )}
+                      {bothInArea ? (
+                        <button
+                          onClick={() => handleMatch(match.id)}
+                          className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
+                        >
+                          この人と交換する
+                        </button>
+                      ) : (
+                        <div className="w-full bg-slate-200 text-slate-400 py-3 rounded-xl font-bold text-center">
+                          会場エリア外です
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
