@@ -57,6 +57,8 @@ export default function MatchingPage() {
     requesterName: string;
     colorCode: string | null;
     requesterId: string;
+    theyOffer: { name: string; quantity: number }[];
+    theyWant: { name: string; quantity: number }[];
   } | null>(null);
   const router = useRouter();
   const channelsRef = useRef<RealtimeChannel[]>([]);
@@ -409,17 +411,44 @@ export default function MatchingPage() {
               color_code: string | null;
             };
             if (newMatch.user2_id === currentUserId) {
-              const { data: requester } = await supabase
-                .from('users')
-                .select('nickname')
-                .eq('id', newMatch.user1_id)
-                .single();
-              const name = requester?.nickname || '誰か';
+              const [requesterRes, theirGoodsRes, myGoodsRes, goodsNamesRes] = await Promise.all([
+                supabase.from('users').select('nickname').eq('id', newMatch.user1_id).single(),
+                supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', newMatch.user1_id),
+                supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', currentUserId),
+                supabase.from('goods_master').select('id, name'),
+              ]);
+
+              const nameMap: Record<string, string> = {};
+              (goodsNamesRes.data || []).forEach((g: { id: string; name: string }) => { nameMap[g.id] = g.name; });
+
+              const theirHave: Record<string, number> = {};
+              const theirWant = new Set<string>();
+              for (const row of theirGoodsRes.data || []) {
+                if (row.type === 'have') theirHave[row.goods_id] = row.quantity || 1;
+                else theirWant.add(row.goods_id);
+              }
+
+              const myHave = new Set<string>();
+              const myWant = new Set<string>();
+              for (const row of myGoodsRes.data || []) {
+                if (row.type === 'have') myHave.add(row.goods_id);
+                else myWant.add(row.goods_id);
+              }
+
+              const theyOffer = Object.keys(theirHave)
+                .filter((id) => myWant.has(id))
+                .map((id) => ({ name: nameMap[id] || id, quantity: theirHave[id] }));
+              const theyWant = Array.from(theirWant)
+                .filter((id) => myHave.has(id))
+                .map((id) => ({ name: nameMap[id] || id, quantity: 1 }));
+
               setIncomingRequest({
                 matchRecordId: newMatch.id,
-                requesterName: name,
+                requesterName: requesterRes.data?.nickname || '誰か',
                 colorCode: newMatch.color_code,
                 requesterId: newMatch.user1_id,
+                theyOffer,
+                theyWant,
               });
             }
           }
@@ -551,6 +580,29 @@ export default function MatchingPage() {
             <p className="font-bold text-amber-600 text-lg mb-3 flex items-center gap-2">
               <Bell className="w-5 h-5" /> {incomingRequest.requesterName}さんから交換リクエスト！
             </p>
+
+            {/* 交換内容 */}
+            {(incomingRequest.theyOffer.length > 0 || incomingRequest.theyWant.length > 0) && (
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white/60 rounded-lg p-2">
+                  <p className="text-xs font-semibold text-indigo-600 mb-1">もらえるグッズ</p>
+                  <ul className="text-xs text-slate-700 space-y-0.5">
+                    {incomingRequest.theyOffer.map((item, i) => (
+                      <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-white/60 rounded-lg p-2">
+                  <p className="text-xs font-semibold text-indigo-600 mb-1">渡すグッズ</p>
+                  <ul className="text-xs text-slate-700 space-y-0.5">
+                    {incomingRequest.theyWant.map((item, i) => (
+                      <li key={i}>✓ {item.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <button
                 onClick={handleAcceptRequest}

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, GoodsMaster, Event } from '@/lib/supabase';
+import { getCurrentUserId } from '@/lib/auth';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import Image from 'next/image';
-import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, X, ChevronUp, ChevronDown, Bell } from 'lucide-react';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -37,6 +39,15 @@ export default function RegisterPage() {
   const [eventData, setEventData] = useState<Event | null>(null);
   const [expandedGroup, setExpandedGroup] = useState(0);
   const [restored, setRestored] = useState(false);
+  const [incomingRequest, setIncomingRequest] = useState<{
+    matchRecordId: string;
+    requesterName: string;
+    colorCode: string | null;
+    requesterId: string;
+    theyOffer: { name: string; quantity: number }[];
+    theyWant: { name: string; quantity: number }[];
+  } | null>(null);
+  const matchChannelRef = useRef<RealtimeChannel | null>(null);
   const router = useRouter();
   const { showDeleteConfirm, setShowDeleteConfirm, deleting, handleDeleteAllData } = useDeleteAccount();
 
@@ -79,6 +90,111 @@ export default function RegisterPage() {
     }
     localStorage.setItem('tradeGroups', JSON.stringify(tradeGroups));
   }, [tradeGroups, restored]);
+
+  // Subscribe to incoming match requests
+  useEffect(() => {
+    let cancelled = false;
+
+    const setup = setTimeout(async () => {
+      if (cancelled) return;
+      const userId = await getCurrentUserId();
+      if (!userId || cancelled) return;
+
+      const channelId = Date.now().toString();
+      const channel = supabase
+        .channel(`register_matches_${channelId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'matches' },
+          async (payload) => {
+            const newMatch = payload.new as {
+              id: string;
+              user1_id: string;
+              user2_id: string;
+              color_code: string | null;
+            };
+            if (newMatch.user2_id === userId) {
+              // Fetch requester info, both users' goods, and goods names in parallel
+              const [requesterRes, theirGoodsRes, myGoodsRes, goodsNamesRes] = await Promise.all([
+                supabase.from('users').select('nickname').eq('id', newMatch.user1_id).single(),
+                supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', newMatch.user1_id),
+                supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', userId),
+                supabase.from('goods_master').select('id, name'),
+              ]);
+
+              const nameMap: Record<string, string> = {};
+              (goodsNamesRes.data || []).forEach((g: { id: string; name: string }) => { nameMap[g.id] = g.name; });
+
+              // Build their have/want sets
+              const theirHave: Record<string, number> = {};
+              const theirWant = new Set<string>();
+              for (const row of theirGoodsRes.data || []) {
+                if (row.type === 'have') theirHave[row.goods_id] = row.quantity || 1;
+                else theirWant.add(row.goods_id);
+              }
+
+              // Build my have/want sets
+              const myHave = new Set<string>();
+              const myWant = new Set<string>();
+              for (const row of myGoodsRes.data || []) {
+                if (row.type === 'have') myHave.add(row.goods_id);
+                else myWant.add(row.goods_id);
+              }
+
+              // Cross-match: they offer items I want, they want items I have
+              const theyOffer = Object.keys(theirHave)
+                .filter((id) => myWant.has(id))
+                .map((id) => ({ name: nameMap[id] || id, quantity: theirHave[id] }));
+              const theyWant = Array.from(theirWant)
+                .filter((id) => myHave.has(id))
+                .map((id) => ({ name: nameMap[id] || id, quantity: 1 }));
+
+              setIncomingRequest({
+                matchRecordId: newMatch.id,
+                requesterName: requesterRes.data?.nickname || '誰か',
+                colorCode: newMatch.color_code,
+                requesterId: newMatch.user1_id,
+                theyOffer,
+                theyWant,
+              });
+            }
+          }
+        )
+        .subscribe();
+
+      matchChannelRef.current = channel;
+    }, 100);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(setup);
+      if (matchChannelRef.current) {
+        supabase.removeChannel(matchChannelRef.current);
+        matchChannelRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleAcceptRequest = async () => {
+    if (!incomingRequest) return;
+
+    await supabase
+      .from('matches')
+      .update({ status: 'accepted' })
+      .eq('id', incomingRequest.matchRecordId);
+
+    localStorage.setItem('currentMatch', JSON.stringify({
+      id: incomingRequest.requesterId,
+      nickname: incomingRequest.requesterName,
+      distance: 0,
+      groupMatches: [],
+      colorCode: incomingRequest.colorCode || '#FF6B6B',
+      matchRecordId: incomingRequest.matchRecordId,
+      lat: 0,
+      lng: 0,
+    }));
+    router.push('/identify');
+  };
 
   const fetchGoods = async (eventId: string) => {
     const { data: evData } = await supabase
@@ -272,6 +388,52 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-[#1a2d4a] p-4">
       <div className="max-w-4xl mx-auto">
+        {/* 交換リクエスト通知 */}
+        {incomingRequest && (
+          <div className="bg-amber-500/10 border-2 border-amber-500/30 p-5 rounded-2xl mb-4">
+            <p className="font-bold text-amber-600 text-lg mb-3 flex items-center gap-2">
+              <Bell className="w-5 h-5" /> {incomingRequest.requesterName}さんから交換リクエスト！
+            </p>
+
+            {/* 交換内容 */}
+            {(incomingRequest.theyOffer.length > 0 || incomingRequest.theyWant.length > 0) && (
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white/60 rounded-lg p-2">
+                  <p className="text-xs font-semibold text-indigo-600 mb-1">もらえるグッズ</p>
+                  <ul className="text-xs text-slate-700 space-y-0.5">
+                    {incomingRequest.theyOffer.map((item, i) => (
+                      <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-white/60 rounded-lg p-2">
+                  <p className="text-xs font-semibold text-indigo-600 mb-1">渡すグッズ</p>
+                  <ul className="text-xs text-slate-700 space-y-0.5">
+                    {incomingRequest.theyWant.map((item, i) => (
+                      <li key={i}>✓ {item.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleAcceptRequest}
+                className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
+              >
+                承認して識別へ
+              </button>
+              <button
+                onClick={() => setIncomingRequest(null)}
+                className="px-4 bg-slate-100 text-slate-600 py-3 rounded-xl font-semibold hover:bg-slate-300 transition-colors"
+              >
+                後で
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ヘッダー */}
         <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
           <h1 className="text-xl font-bold text-slate-800 mb-2">{eventName}</h1>
