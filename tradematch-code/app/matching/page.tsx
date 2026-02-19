@@ -656,15 +656,6 @@ export default function MatchingPage() {
           </div>
         )}
 
-        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">マッチング結果</h1>
-          <p className="text-slate-400">
-            {matches.length > 0
-              ? `${matches.length}人の交換相手が見つかりました！`
-              : '近くに交換相手が見つかりませんでした'}
-          </p>
-        </div>
-
         {matches.length === 0 ? (
           <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
             <SearchX className="w-12 h-12 text-slate-500 mx-auto mb-4" />
@@ -684,13 +675,32 @@ export default function MatchingPage() {
             </div>
             <button
               onClick={() => router.push('/register')}
-              className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
+              className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors mb-3"
             >
-              グッズ登録に戻る
+              グッズ編集に戻る
+              <span className="block text-xs font-normal opacity-70 mt-0.5">※ 編集中もリクエストは届きます</span>
+            </button>
+            <button
+              onClick={async () => {
+                const userId = await getCurrentUserId();
+                if (userId) {
+                  await supabase.from('users').update({ is_active: false }).eq('id', userId);
+                }
+                router.push('/register');
+              }}
+              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors"
+            >
+              マッチング待ちを解除して戻る
             </button>
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6">
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">マッチング結果</h1>
+              <p className="text-slate-400">
+                {matches.length}人の交換相手が見つかりました！
+              </p>
+            </div>
             {matches.map((match) => (
               <div key={match.id} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -773,14 +783,32 @@ export default function MatchingPage() {
           </div>
         )}
 
-        <div className="mt-4 text-center space-y-3">
-          <button
-            onClick={() => router.push('/register')}
-            className="text-indigo-400 underline hover:text-indigo-300"
-          >
-            グッズ登録に戻る
-          </button>
+        {/* Actions card (shown when matches exist) */}
+        {matches.length > 0 && (
+          <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mt-4 text-center">
+            <button
+              onClick={() => router.push('/register')}
+              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors mb-3"
+            >
+              グッズ編集に戻る
+              <span className="block text-xs font-normal opacity-70 mt-0.5">※ 編集中もリクエストは届きます</span>
+            </button>
+            <button
+              onClick={async () => {
+                const userId = await getCurrentUserId();
+                if (userId) {
+                  await supabase.from('users').update({ is_active: false }).eq('id', userId);
+                }
+                router.push('/register');
+              }}
+              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors"
+            >
+              マッチング待ちを解除して戻る
+            </button>
+          </div>
+        )}
 
+        <div className="mt-4 text-center space-y-3">
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
