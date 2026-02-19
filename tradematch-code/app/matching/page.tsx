@@ -526,12 +526,15 @@ export default function MatchingPage() {
     }
   }, [myLocation, eventData, updateActiveStatus]);
 
+  const [sendingRequest, setSendingRequest] = useState(false);
+
   const handleMatch = async (matchUserId: string) => {
     const match = matches.find((m) => m.id === matchUserId);
-    if (!match) return;
+    if (!match || sendingRequest) return;
 
+    setSendingRequest(true);
     const userId = await getCurrentUserId();
-    if (!userId) return;
+    if (!userId) { setSendingRequest(false); return; }
 
     const { data: matchRecord, error } = await supabase
       .from('matches')
@@ -546,6 +549,8 @@ export default function MatchingPage() {
 
     if (error) {
       console.error('Error creating match:', error);
+      setSendingRequest(false);
+      return;
     }
 
     localStorage.setItem('currentMatch', JSON.stringify({

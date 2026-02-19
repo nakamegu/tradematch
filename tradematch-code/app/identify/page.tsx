@@ -338,7 +338,7 @@ export default function IdentifyPage() {
   }, [chatOpen]);
 
   const sendMessage = async () => {
-    const text = chatInput.trim();
+    const text = chatInput.trim().slice(0, 500);
     if (!text || !myUserId) return;
     const matchRecordId = matchData?.matchRecordId;
     if (!matchRecordId) return;
@@ -633,9 +633,10 @@ export default function IdentifyPage() {
                   <input
                     type="text"
                     value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
+                    onChange={(e) => setChatInput(e.target.value.slice(0, 500))}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) sendMessage(); }}
                     placeholder="メッセージを入力..."
+                    maxLength={500}
                     className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
                   />
                   <button
