@@ -279,25 +279,7 @@ export default function MatchingPage() {
     }
   }, [searchMatches]);
 
-  // Continuous location watch: update is_active based on area
   const watchIdRef = useRef<number | null>(null);
-  const prevInAreaRef = useRef<boolean | null>(null);
-
-  const updateActiveStatus = useCallback(async (inArea: boolean) => {
-    // Only update DB if status actually changed
-    if (prevInAreaRef.current === inArea) return;
-    prevInAreaRef.current = inArea;
-
-    const userId = await getCurrentUserId();
-    if (!userId) return;
-
-    await supabase
-      .from('users')
-      .update({ is_active: inArea })
-      .eq('id', userId);
-
-    console.log(`[Location] is_active → ${inArea}`);
-  }, []);
 
   useEffect(() => {
     const tradeGroupsData = localStorage.getItem('tradeGroups');
@@ -522,9 +504,8 @@ export default function MatchingPage() {
     if (eventData && myLocation.lat !== 0) {
       const inArea = isWithinEventArea(myLocation.lat, myLocation.lng, eventData);
       setIsInArea(inArea);
-      updateActiveStatus(inArea);
     }
-  }, [myLocation, eventData, updateActiveStatus]);
+  }, [myLocation, eventData]);
 
   // Periodically refresh matched users' locations
   useEffect(() => {
