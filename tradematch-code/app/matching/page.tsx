@@ -534,19 +534,24 @@ export default function MatchingPage() {
       const matchIds = matches.map((m) => m.id);
       const { data } = await supabase
         .from('users')
-        .select('id, latitude, longitude')
+        .select('id, latitude, longitude, is_active')
         .in('id', matchIds);
 
       if (data && data.length > 0) {
-        const locationMap = new Map(data.map((u: { id: string; latitude: number; longitude: number }) => [u.id, u]));
+        const locationMap = new Map(data.map((u: { id: string; latitude: number; longitude: number; is_active: boolean }) => [u.id, u]));
         setMatches((prev) =>
-          prev.map((m) => {
-            const updated = locationMap.get(m.id);
-            if (updated && (updated.latitude !== m.lat || updated.longitude !== m.lng)) {
-              return { ...m, lat: updated.latitude || 0, lng: updated.longitude || 0 };
-            }
-            return m;
-          })
+          prev
+            .filter((m) => {
+              const updated = locationMap.get(m.id);
+              return !updated || updated.is_active;
+            })
+            .map((m) => {
+              const updated = locationMap.get(m.id);
+              if (updated && (updated.latitude !== m.lat || updated.longitude !== m.lng)) {
+                return { ...m, lat: updated.latitude || 0, lng: updated.longitude || 0 };
+              }
+              return m;
+            })
         );
       }
     };
