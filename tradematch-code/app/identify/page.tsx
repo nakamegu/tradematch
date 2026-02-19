@@ -83,6 +83,75 @@ export default function IdentifyPage() {
     setMatchData(parsed);
     setOtherLocation({ lat: parsed.lat || 0, lng: parsed.lng || 0 });
 
+    // If groupMatches is empty, compute from DB
+    if (!parsed.groupMatches || parsed.groupMatches.length === 0) {
+      (async () => {
+        const myId = await getCurrentUserId();
+        if (!myId) return;
+        const partnerId = parsed.id;
+
+        const [myGoodsRes, theirGoodsRes, namesRes] = await Promise.all([
+          supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', myId),
+          supabase.from('user_goods').select('goods_id, type, quantity, group_id').eq('user_id', partnerId),
+          supabase.from('goods_master').select('id, name'),
+        ]);
+
+        const nameMap: Record<string, string> = {};
+        (namesRes.data || []).forEach((g: { id: string; name: string }) => { nameMap[g.id] = g.name; });
+
+        // Build my groups
+        const myGroupsMap = new Map<number, { have: Record<string, number>; wantItems: string[]; wantQuantity: number }>();
+        for (const row of myGoodsRes.data || []) {
+          const gid = row.group_id ?? 0;
+          if (!myGroupsMap.has(gid)) myGroupsMap.set(gid, { have: {}, wantItems: [], wantQuantity: 1 });
+          const g = myGroupsMap.get(gid)!;
+          if (row.type === 'have') g.have[row.goods_id] = row.quantity || 1;
+          else { g.wantItems.push(row.goods_id); g.wantQuantity = row.quantity || 1; }
+        }
+
+        // Build their groups
+        const theirGroupsMap = new Map<number, { have: Record<string, number>; wantItems: string[]; wantQuantity: number }>();
+        for (const row of theirGoodsRes.data || []) {
+          const gid = row.group_id ?? 0;
+          if (!theirGroupsMap.has(gid)) theirGroupsMap.set(gid, { have: {}, wantItems: [], wantQuantity: 1 });
+          const g = theirGroupsMap.get(gid)!;
+          if (row.type === 'have') g.have[row.goods_id] = row.quantity || 1;
+          else { g.wantItems.push(row.goods_id); g.wantQuantity = row.quantity || 1; }
+        }
+
+        const myGroups = Array.from(myGroupsMap.entries());
+        const theirGroups = Array.from(theirGroupsMap.values());
+        const groupMatches: any[] = [];
+
+        for (const [mgIdx, myGroup] of myGroups) {
+          const myHaveIds = Object.keys(myGroup.have);
+          const myWantIds = myGroup.wantItems;
+          for (const theirGroup of theirGroups) {
+            const theirHaveIds = Object.keys(theirGroup.have);
+            const theirWantIds = theirGroup.wantItems;
+            const theyOfferIds = theirHaveIds.filter((id) => myWantIds.includes(id));
+            const youOfferIds = myHaveIds.filter((id) => theirWantIds.includes(id));
+            if (theyOfferIds.length > 0 && youOfferIds.length > 0) {
+              groupMatches.push({
+                myGroupIdx: mgIdx,
+                theyOffer: theyOfferIds.map((id) => ({ id, name: nameMap[id] || id, quantity: theirGroup.have[id] || 1 })),
+                theyWantQty: theirGroup.wantQuantity,
+                youOffer: youOfferIds.map((id) => ({ id, name: nameMap[id] || id, quantity: myGroup.have[id] || 1 })),
+                myWantQty: myGroup.wantQuantity,
+                myGiveCount: 1,
+              });
+            }
+          }
+        }
+
+        if (groupMatches.length > 0) {
+          const updated = { ...parsed, groupMatches };
+          setMatchData(updated);
+          localStorage.setItem('currentMatch', JSON.stringify(updated));
+        }
+      })();
+    }
+
     // Area check helper
     const eventId = localStorage.getItem('selectedEventId');
     let eventCache: Event | null = null;
@@ -303,6 +372,18 @@ export default function IdentifyPage() {
     setTradedQty(qty);
   }, []);
 
+  // When status changes to completed (by either party), initialize tradedQty
+  const prevStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    const status = matchRecord?.status;
+    if (status === 'completed' && prevStatusRef.current !== 'completed') {
+      if (matchData?.groupMatches) {
+        initTradedQty(matchData.groupMatches);
+      }
+    }
+    prevStatusRef.current = status ?? null;
+  }, [matchRecord?.status, matchData, initTradedQty]);
+
   const updateTradedQty = (key: string, delta: number, max: number) => {
     setTradedQty((prev) => {
       const current = prev[key] ?? 0;
@@ -311,7 +392,7 @@ export default function IdentifyPage() {
     });
   };
 
-  // Update tradeGroups in localStorage using edited quantities
+  // Update tradeGroups in localStorage: reduce quantities after trade
   const updateTradeGroupsAfterTrade = useCallback(() => {
     const groupMatches = matchData?.groupMatches;
     if (!groupMatches || groupMatches.length === 0) return;
@@ -352,10 +433,13 @@ export default function IdentifyPage() {
         (g: any) => Object.keys(g.have).length > 0 && g.wantItems.length > 0 && g.wantQuantity > 0
       );
 
+      const eventId = localStorage.getItem('selectedEventId');
       if (filtered.length > 0) {
         localStorage.setItem('tradeGroups', JSON.stringify(filtered));
+        if (eventId) localStorage.setItem(`tradeGroups_${eventId}`, JSON.stringify(filtered));
       } else {
         localStorage.removeItem('tradeGroups');
+        if (eventId) localStorage.removeItem(`tradeGroups_${eventId}`);
       }
     } catch {
       // ignore parse errors
@@ -382,9 +466,6 @@ export default function IdentifyPage() {
         console.log('[Identify] Match updated successfully:', data);
         setMatchRecord(data as Match);
         setStatusLabel(getStatusLabel('completed'));
-        if (matchData?.groupMatches) {
-          initTradedQty(matchData.groupMatches);
-        }
       }
     }
   };
@@ -407,14 +488,13 @@ export default function IdentifyPage() {
   };
 
   const handleGoHome = () => {
-    if (!qtyConfirmed) updateTradeGroupsAfterTrade();
+    updateTradeGroupsAfterTrade();
     localStorage.removeItem('currentMatch');
-    localStorage.removeItem('tradeGroups');
     router.push('/');
   };
 
   const handleContinueTrade = () => {
-    if (!qtyConfirmed) updateTradeGroupsAfterTrade();
+    updateTradeGroupsAfterTrade();
     localStorage.removeItem('currentMatch');
     router.push('/register');
   };
