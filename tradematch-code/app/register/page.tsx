@@ -36,6 +36,7 @@ export default function RegisterPage() {
   const [eventName, setEventName] = useState('');
   const [eventData, setEventData] = useState<Event | null>(null);
   const [expandedGroup, setExpandedGroup] = useState(0);
+  const [restored, setRestored] = useState(false);
   const router = useRouter();
   const { showDeleteConfirm, setShowDeleteConfirm, deleting, handleDeleteAllData } = useDeleteAccount();
 
@@ -52,8 +53,8 @@ export default function RegisterPage() {
       return;
     }
 
-    // Restore tradeGroups from localStorage if available
-    const saved = localStorage.getItem('tradeGroups');
+    // Restore tradeGroups from localStorage (event-specific key)
+    const saved = localStorage.getItem(`tradeGroups_${eventId}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as TradeGroup[];
@@ -64,9 +65,20 @@ export default function RegisterPage() {
         // ignore parse errors, keep default
       }
     }
+    setRestored(true);
 
     fetchGoods(eventId);
   }, [router]);
+
+  // Auto-save tradeGroups to localStorage on every change (only after restore)
+  useEffect(() => {
+    if (!restored) return;
+    const eventId = localStorage.getItem('selectedEventId');
+    if (eventId) {
+      localStorage.setItem(`tradeGroups_${eventId}`, JSON.stringify(tradeGroups));
+    }
+    localStorage.setItem('tradeGroups', JSON.stringify(tradeGroups));
+  }, [tradeGroups, restored]);
 
   const fetchGoods = async (eventId: string) => {
     const { data: evData } = await supabase
