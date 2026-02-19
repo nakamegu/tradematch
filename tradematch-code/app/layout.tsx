@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '交換っこ - ライブグッズ交換アプリ',
+  title: '譲求 - ライブグッズ交換アプリ',
   description: 'ライブ会場でグッズ交換相手を見つけるアプリ',
 }
 

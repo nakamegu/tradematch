@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureAuth } from '@/lib/auth';
+import Logo from '@/components/Logo';
 
 export default function Home() {
   const [nickname, setNickname] = useState('');
@@ -28,7 +29,7 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center bg-[#1a2d4a] p-4">
       <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full">
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-slate-800 mb-2">交換っこ</h1>
+          <h1 className="mb-2"><Logo size="lg" /></h1>
           <p className="text-slate-500 text-sm leading-relaxed">
             ライブ会場でグッズを物々交換するためのアプリです。<br />
             会場にいる人同士で、その場で手渡し交換します。

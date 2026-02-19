@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Logo from '@/components/Logo'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -70,8 +71,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="bg-slate-800 border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <a href="/admin" className="text-lg font-bold text-indigo-400">
-              交換っこ管理
+            <a href="/admin" className="flex items-center gap-2">
+              <Logo size="sm" />
+              <span className="text-sm font-bold text-indigo-400">管理</span>
             </a>
             <nav className="flex gap-4">
               <a
