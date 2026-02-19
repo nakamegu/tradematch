@@ -121,9 +121,12 @@ export default function EventEntryPage() {
           </button>
         </div>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 flex justify-center gap-4">
+          <a href="/guide" className="text-indigo-400 text-xs font-semibold hover:text-indigo-600">
+            使い方ガイド
+          </a>
           <a href="/privacy" className="text-slate-400 text-xs hover:text-slate-600">
-            データの取り扱いについて
+            データの取り扱い
           </a>
         </div>
       </div>
