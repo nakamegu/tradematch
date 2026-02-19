@@ -8,6 +8,7 @@ import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { Plus, X, ChevronUp, ChevronDown, Bell } from 'lucide-react';
 import CroppedImage from '@/components/CroppedImage';
+import { notifyMatch } from '@/lib/notify';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -169,6 +170,7 @@ export default function RegisterPage() {
                 theyOffer,
                 theyWant,
               });
+              notifyMatch();
             }
           }
         )

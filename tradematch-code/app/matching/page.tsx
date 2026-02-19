@@ -10,6 +10,7 @@ import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import { MapPin, Loader2, SearchX, Lightbulb, User, Bell } from 'lucide-react';
+import { notifyMatch } from '@/lib/notify';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -181,6 +182,9 @@ export default function MatchingPage() {
       }
 
       setMatches(foundMatches);
+      if (foundMatches.length > 0) {
+        notifyMatch();
+      }
     } catch (err) {
       console.error('Search error:', err);
     } finally {
@@ -414,6 +418,7 @@ export default function MatchingPage() {
         theyOffer,
         theyWant,
       });
+      notifyMatch();
     };
 
     // Poll for incoming match requests every 5 seconds
