@@ -1,6 +1,7 @@
 'use client'
 
 import Logo from '@/components/Logo'
+import Footer from '@/components/Footer'
 
 export default function PrivacyPage() {
   return (
@@ -92,11 +93,7 @@ export default function PrivacyPage() {
           </div>
         </div>
 
-        <div className="text-center">
-          <a href="/" className="text-slate-400 text-sm hover:text-slate-300">
-            トップに戻る
-          </a>
-        </div>
+        <Footer />
       </div>
     </main>
   )

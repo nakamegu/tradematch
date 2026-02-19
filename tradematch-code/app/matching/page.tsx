@@ -11,6 +11,7 @@ import { isWithinEventArea } from '@/lib/geo';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import { MapPin, Loader2, SearchX, Lightbulb, User, Bell } from 'lucide-react';
 import { notifyMatch } from '@/lib/notify';
+import Footer from '@/components/Footer';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -847,6 +848,7 @@ export default function MatchingPage() {
             </div>
           )}
         </div>
+        <Footer />
       </div>
     </main>
   );

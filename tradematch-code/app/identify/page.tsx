@@ -9,6 +9,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
 import { User, Lightbulb, Zap, Check, Eye, X, MessageCircle, Send } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 export default function IdentifyPage() {
   const [matchData, setMatchData] = useState<any>(null);
@@ -809,6 +810,7 @@ export default function IdentifyPage() {
           </ol>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

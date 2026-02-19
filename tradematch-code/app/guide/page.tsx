@@ -1,6 +1,7 @@
 'use client'
 
 import Logo from '@/components/Logo'
+import Footer from '@/components/Footer'
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -364,14 +365,12 @@ export default function GuidePage() {
           </div>
         </div>
 
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center">
           <a href="/" className="bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors">
             はじめる
           </a>
-          <a href="/privacy" className="text-slate-400 text-sm hover:text-slate-300 flex items-center">
-            データの取り扱い
-          </a>
         </div>
+        <Footer />
       </div>
     </main>
   )

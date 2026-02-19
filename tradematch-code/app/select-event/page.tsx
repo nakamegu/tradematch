@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, Event } from '@/lib/supabase';
 import EventAreaMapWrapper from '@/components/EventAreaMapWrapper';
 import { ClipboardList, Repeat, MapPin } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 function isInPeriod(now: string, start?: string, end?: string): boolean {
   if (!start && !end) return false; // no period configured = not "in" this period
@@ -201,6 +202,7 @@ function SelectEventContent() {
             );
           })}
         </div>
+        <Footer />
       </div>
     </main>
   );

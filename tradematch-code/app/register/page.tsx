@@ -9,6 +9,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { Plus, X, ChevronUp, ChevronDown, Bell } from 'lucide-react';
 import CroppedImage from '@/components/CroppedImage';
 import { notifyMatch } from '@/lib/notify';
+import Footer from '@/components/Footer';
 
 interface TradeGroup {
   have: Record<string, number>;
@@ -677,6 +678,7 @@ export default function RegisterPage() {
             </div>
           )}
         </div>
+        <Footer />
       </div>
     </main>
   );

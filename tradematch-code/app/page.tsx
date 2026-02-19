@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureAuth } from '@/lib/auth';
 import Logo from '@/components/Logo';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   const [nickname, setNickname] = useState('');
@@ -92,14 +93,7 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="mt-4 flex justify-center gap-4">
-          <a href="/guide" className="text-indigo-400 text-xs font-semibold hover:text-indigo-600">
-            使い方ガイド
-          </a>
-          <a href="/privacy" className="text-slate-400 text-xs hover:text-slate-600">
-            データの取り扱い
-          </a>
-        </div>
+        <Footer />
       </div>
     </main>
   );
