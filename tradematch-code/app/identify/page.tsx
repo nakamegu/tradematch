@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import type { Match, Event } from '@/lib/supabase';
+import { getCurrentUserId } from '@/lib/auth';
+import type { Match, MatchMessage, Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
-import { User, Lightbulb, Zap, Check, Eye, X } from 'lucide-react';
+import { User, Lightbulb, Zap, Check, Eye, X, MessageCircle, Send } from 'lucide-react';
 
 export default function IdentifyPage() {
   const [matchData, setMatchData] = useState<any>(null);
@@ -15,6 +16,7 @@ export default function IdentifyPage() {
   const [isFlashing, setIsFlashing] = useState(false);
   const [statusLabel, setStatusLabel] = useState<string>('');
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
+  const [otherLocation, setOtherLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const [isInArea, setIsInArea] = useState(true);
   // tradedQty: key = "groupIdx-give-itemIdx" or "groupIdx-get-itemIdx", value = quantity
   const [tradedQty, setTradedQty] = useState<Record<string, number>>({});
@@ -23,6 +25,16 @@ export default function IdentifyPage() {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const matchRecordIdRef = useRef<string | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const locationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Chat
+  const [messages, setMessages] = useState<MatchMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const chatChannelRef = useRef<RealtimeChannel | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const getStatusLabel = (status: string): string => {
     switch (status) {
@@ -69,27 +81,49 @@ export default function IdentifyPage() {
 
     const parsed = JSON.parse(data);
     setMatchData(parsed);
+    setOtherLocation({ lat: parsed.lat || 0, lng: parsed.lng || 0 });
 
-    // Get own location for map + area check
+    // Area check helper
     const eventId = localStorage.getItem('selectedEventId');
+    let eventCache: Event | null = null;
+    if (eventId) {
+      supabase.from('events').select('*').eq('id', eventId).single().then(({ data: ev }) => {
+        if (ev) eventCache = ev as Event;
+      });
+    }
+
+    // Continuous location tracking with watchPosition
     if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
           const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setMyLocation(loc);
-          if (eventId) {
-            const { data: ev } = await supabase
-              .from('events')
-              .select('*')
-              .eq('id', eventId)
-              .single();
-            if (ev) {
-              setIsInArea(isWithinEventArea(loc.lat, loc.lng, ev as Event));
-            }
+          if (eventCache) {
+            setIsInArea(isWithinEventArea(loc.lat, loc.lng, eventCache));
           }
+          // Update own location in DB
+          supabase.rpc('update_user_location', { lat: loc.lat, lng: loc.lng });
         },
-        () => {} // ignore error
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
       );
+    }
+
+    // Poll partner's location every 5 seconds
+    const partnerId = parsed.id;
+    if (partnerId) {
+      const pollOther = async () => {
+        const { data: user } = await supabase
+          .from('users')
+          .select('latitude, longitude')
+          .eq('id', partnerId)
+          .single();
+        if (user?.latitude && user?.longitude) {
+          setOtherLocation({ lat: user.latitude, lng: user.longitude });
+        }
+      };
+      pollOther(); // initial fetch
+      locationPollRef.current = setInterval(pollOther, 5000);
     }
 
     const matchRecordId = parsed.matchRecordId;
@@ -148,12 +182,104 @@ export default function IdentifyPage() {
       cancelled = true;
       clearTimeout(setupTimer);
       if (pollRef.current) clearInterval(pollRef.current);
+      if (locationPollRef.current) clearInterval(locationPollRef.current);
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
   }, [router, pollMatchStatus, updateMatchState]);
+
+  // Chat: load messages + subscribe to new ones
+  useEffect(() => {
+    const data = localStorage.getItem('currentMatch');
+    if (!data) return;
+    const parsed = JSON.parse(data);
+    const matchRecordId = parsed.matchRecordId;
+    if (!matchRecordId) return;
+
+    let cancelled = false;
+
+    const setupChat = async () => {
+      const userId = await getCurrentUserId();
+      if (!userId || cancelled) return;
+      setMyUserId(userId);
+
+      // Load existing messages
+      const { data: msgs } = await supabase
+        .from('match_messages')
+        .select('*')
+        .eq('match_id', matchRecordId)
+        .order('created_at', { ascending: true });
+      if (msgs && !cancelled) {
+        setMessages(msgs as MatchMessage[]);
+      }
+
+      // Subscribe to new messages
+      const channel = supabase
+        .channel(`chat_${matchRecordId}_${Date.now()}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'match_messages' },
+          (payload) => {
+            const newMsg = payload.new as MatchMessage;
+            if (newMsg.match_id === matchRecordId) {
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+              // Increment unread if chat is closed and message is from other user
+              if (newMsg.sender_id !== userId) {
+                setUnreadCount((prev) => prev + 1);
+              }
+            }
+          }
+        )
+        .subscribe();
+
+      chatChannelRef.current = channel;
+    };
+
+    setupChat();
+
+    return () => {
+      cancelled = true;
+      if (chatChannelRef.current) {
+        supabase.removeChannel(chatChannelRef.current);
+        chatChannelRef.current = null;
+      }
+    };
+  }, []);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (chatOpen && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, chatOpen]);
+
+  // Clear unread when chat is opened
+  useEffect(() => {
+    if (chatOpen) setUnreadCount(0);
+  }, [chatOpen]);
+
+  const sendMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || !myUserId) return;
+    const matchRecordId = matchData?.matchRecordId;
+    if (!matchRecordId) return;
+
+    setChatInput('');
+    await supabase.from('match_messages').insert({
+      match_id: matchRecordId,
+      sender_id: myUserId,
+      message: text,
+    });
+  };
 
   const handleFlash = () => {
     setIsFlashing(true);
@@ -346,15 +472,83 @@ export default function IdentifyPage() {
         </div>
 
         {/* Map (hidden outside event area) */}
-        {isInArea && myLocation.lat !== 0 && matchData.lat !== 0 && (
+        {isInArea && myLocation.lat !== 0 && otherLocation.lat !== 0 && (
           <div className="mb-6" style={{ height: '180px' }}>
             <TradeMapWrapper
               myLat={myLocation.lat}
               myLng={myLocation.lng}
-              otherLat={matchData.lat}
-              otherLng={matchData.lng}
+              otherLat={otherLocation.lat}
+              otherLng={otherLocation.lng}
               otherName={matchData.nickname}
             />
+          </div>
+        )}
+
+        {/* Chat */}
+        {matchData.matchRecordId && (
+          <div className="mb-6">
+            <button
+              onClick={() => setChatOpen(!chatOpen)}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 relative"
+            >
+              <MessageCircle className="w-5 h-5" />
+              メッセージ
+              {unreadCount > 0 && (
+                <span className="absolute right-3 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {chatOpen && (
+              <div className="mt-2 bg-white border border-slate-200 rounded-xl overflow-hidden">
+                {/* Messages */}
+                <div className="h-48 overflow-y-auto p-3 space-y-2">
+                  {messages.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center py-4">
+                      メッセージはまだありません
+                    </p>
+                  )}
+                  {messages.map((msg) => {
+                    const isMine = msg.sender_id === myUserId;
+                    return (
+                      <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
+                          isMine
+                            ? 'bg-indigo-500 text-white rounded-br-md'
+                            : 'bg-slate-100 text-slate-700 rounded-bl-md'
+                        }`}>
+                          <p className="break-words">{msg.message}</p>
+                          <p className={`text-[10px] mt-0.5 ${isMine ? 'text-indigo-200' : 'text-slate-400'}`}>
+                            {new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={chatEndRef} />
+                </div>
+
+                {/* Input */}
+                <div className="border-t border-slate-200 p-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) sendMessage(); }}
+                    placeholder="メッセージを入力..."
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!chatInput.trim()}
+                    className="px-3 py-2 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg transition-colors disabled:opacity-40"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

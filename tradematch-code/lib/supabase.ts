@@ -60,6 +60,14 @@ export type Match = {
   completed_at: string | null
 }
 
+export type MatchMessage = {
+  id: string
+  match_id: string
+  sender_id: string
+  message: string
+  created_at: string
+}
+
 export type GoodsRequest = {
   id: string
   user_id: string
