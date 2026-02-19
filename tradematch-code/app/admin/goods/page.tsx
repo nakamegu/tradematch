@@ -315,8 +315,8 @@ export default function GoodsManagementPage() {
               />
               {uploading && <p className="text-sm text-slate-500 mt-1">アップロード中...</p>}
               {form.image_url && (
-                <div className="mt-2">
-                  <img src={form.image_url} alt="プレビュー" className="h-20 w-20 object-cover rounded" />
+                <div className="mt-2 h-40 w-40 rounded-lg overflow-hidden bg-slate-200 flex items-center justify-center">
+                  <img src={form.image_url} alt="プレビュー" className="max-w-full max-h-full object-contain" />
                 </div>
               )}
             </div>

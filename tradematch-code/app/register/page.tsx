@@ -343,12 +343,12 @@ export default function RegisterPage() {
             }`}
           >
             {good.image_url && (
-              <div className="relative w-full h-16 mb-1">
+              <div className="relative w-full aspect-square mb-1 bg-slate-200 rounded-lg overflow-hidden">
                 <Image
                   src={good.image_url}
                   alt={good.name}
                   fill
-                  className="object-cover rounded-lg"
+                  className="object-contain"
                 />
               </div>
             )}

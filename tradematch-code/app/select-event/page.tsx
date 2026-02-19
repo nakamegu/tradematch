@@ -100,11 +100,11 @@ export default function SelectEventPage() {
                 <div className="flex">
                   {/* 左: 画像 1/3 */}
                   {event.image_url && (
-                    <div className="w-1/3 shrink-0">
+                    <div className="w-1/3 shrink-0 bg-slate-200 flex items-center justify-center">
                       <img
                         src={event.image_url}
                         alt={event.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   )}

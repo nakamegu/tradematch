@@ -279,8 +279,8 @@ export default function EventsManagementPage() {
               placeholder="https://example.com/image.jpg"
             />
             {form.image_url && (
-              <div className="mt-2 h-32 rounded-xl overflow-hidden bg-slate-200">
-                <img src={form.image_url} alt="プレビュー" className="w-full h-full object-cover" />
+              <div className="mt-2 h-48 rounded-xl overflow-hidden bg-slate-200 flex items-center justify-center">
+                <img src={form.image_url} alt="プレビュー" className="max-w-full max-h-full object-contain" />
               </div>
             )}
           </div>
