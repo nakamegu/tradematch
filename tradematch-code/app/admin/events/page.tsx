@@ -67,6 +67,7 @@ export default function EventsManagementPage() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const formRef = useRef<HTMLDivElement>(null)
 
   const fetchEvents = async () => {
@@ -281,12 +282,25 @@ export default function EventsManagementPage() {
                     </button>
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <button
-                      onClick={() => startEdit(event)}
-                      className="text-indigo-600 hover:text-indigo-500 text-sm"
-                    >
-                      編集
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => startEdit(event)}
+                        className="text-indigo-600 hover:text-indigo-500 text-sm"
+                      >
+                        編集
+                      </button>
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/e/${event.id}`
+                          navigator.clipboard.writeText(url)
+                          setCopiedId(event.id)
+                          setTimeout(() => setCopiedId(null), 2000)
+                        }}
+                        className="text-slate-500 hover:text-slate-700 text-sm"
+                      >
+                        {copiedId === event.id ? 'コピー済み' : 'URL'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
