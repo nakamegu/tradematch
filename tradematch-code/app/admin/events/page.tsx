@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase, Event } from '@/lib/supabase'
 import LocationPickerMapWrapper from '@/components/LocationPickerMapWrapper'
 
@@ -64,8 +64,10 @@ export default function EventsManagementPage() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<EventForm>(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const formRef = useRef<HTMLDivElement>(null)
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -154,11 +156,13 @@ export default function EventsManagementPage() {
     setForm(emptyForm)
     setEditingId(null)
     setSaving(false)
+    setShowForm(false)
     fetchEvents()
   }
 
   const startEdit = (event: Event) => {
     setEditingId(event.id)
+    setShowForm(true)
     setForm({
       name: event.name,
       artist_name: event.artist_name,
@@ -190,11 +194,13 @@ export default function EventsManagementPage() {
         },
       ],
     })
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setShowForm(false)
   }
 
   const toggleActive = async (event: Event) => {
@@ -222,245 +228,19 @@ export default function EventsManagementPage() {
         </div>
       )}
 
-      {/* フォーム */}
-      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-        <h2 className="text-lg font-bold text-slate-800 mb-4">
-          {editingId ? 'イベント編集' : '新規イベント作成'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">イベント名 *</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
-                placeholder="例: 東京ドーム公演 2026"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">アーティスト名 *</label>
-              <input
-                type="text"
-                value={form.artist_name}
-                onChange={(e) => setForm({ ...form, artist_name: e.target.value })}
-                required
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
-                placeholder="例: アーティスト名"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">開催日 *</label>
-              <input
-                type="date"
-                value={form.event_date}
-                onChange={(e) => setForm({ ...form, event_date: e.target.value })}
-                required
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">会場</label>
-              <input
-                type="text"
-                value={form.venue}
-                onChange={(e) => setForm({ ...form, venue: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
-                placeholder="例: 東京ドーム"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">イベント画像URL</label>
-            <input
-              type="url"
-              value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
-              placeholder="https://example.com/image.jpg"
-            />
-            {form.image_url && (
-              <div className="mt-2 h-48 rounded-xl overflow-hidden bg-slate-200 flex items-center justify-center">
-                <img src={form.image_url} alt="プレビュー" className="max-w-full max-h-full object-contain" />
-              </div>
-            )}
-          </div>
-
-          {/* 登録可能期間 */}
-          <fieldset className="border border-slate-300 rounded-xl p-4">
-            <legend className="text-sm font-semibold text-slate-600 px-1">アイテム登録可能期間</legend>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">開始日時</label>
-                <input
-                  type="datetime-local"
-                  value={form.register_start}
-                  onChange={(e) => setForm({ ...form, register_start: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">終了日時</label>
-                <input
-                  type="datetime-local"
-                  value={form.register_end}
-                  onChange={(e) => setForm({ ...form, register_end: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          {/* 交換可能期間 */}
-          <fieldset className="border border-slate-300 rounded-xl p-4">
-            <legend className="text-sm font-semibold text-slate-600 px-1">交換可能期間</legend>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">開始日時</label>
-                <input
-                  type="datetime-local"
-                  value={form.trade_start}
-                  onChange={(e) => setForm({ ...form, trade_start: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">終了日時</label>
-                <input
-                  type="datetime-local"
-                  value={form.trade_end}
-                  onChange={(e) => setForm({ ...form, trade_end: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          {/* 会場エリア1〜3 */}
-          <div className="space-y-4">
-            {form.locations.map((loc, i) => (
-              <div key={i} className="border border-slate-300 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-slate-600">{locationLabels[i]}</h3>
-                  {(loc.latitude || loc.longitude) && (
-                    <button
-                      type="button"
-                      onClick={() => clearLocation(i)}
-                      className="text-xs text-red-600 hover:text-red-500"
-                    >
-                      クリア
-                    </button>
-                  )}
-                </div>
-                <div className="mb-3">
-                  <LocationPickerMapWrapper
-                    lat={loc.latitude ? parseFloat(loc.latitude) : undefined}
-                    lng={loc.longitude ? parseFloat(loc.longitude) : undefined}
-                    radiusKm={loc.radius_km ? parseFloat(loc.radius_km) : undefined}
-                    onChange={(lat, lng) => {
-                      updateLocation(i, {
-                        latitude: String(lat),
-                        longitude: String(lng),
-                      })
-                    }}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-xs text-slate-500 mb-1">緯度</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={loc.latitude}
-                      onChange={(e) => updateLocation(i, { latitude: e.target.value })}
-                      className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
-                      placeholder="35.7056"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 mb-1">経度</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={loc.longitude}
-                      onChange={(e) => updateLocation(i, { longitude: e.target.value })}
-                      className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
-                      placeholder="139.7519"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 mb-1">半径 (km)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0.1"
-                      value={loc.radius_km}
-                      onChange={(e) => updateLocation(i, { radius_km: e.target.value })}
-                      className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
-                      placeholder="1.0"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="enable_trade_groups"
-              checked={form.enable_trade_groups}
-              onChange={(e) => setForm({ ...form, enable_trade_groups: e.target.checked })}
-              className="rounded"
-            />
-            <label htmlFor="enable_trade_groups" className="text-sm text-slate-600">交換セット（複数グループ・比率指定）を有効にする</label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="allow_goods_request"
-              checked={form.allow_goods_request}
-              onChange={(e) => setForm({ ...form, allow_goods_request: e.target.checked })}
-              className="rounded"
-            />
-            <label htmlFor="allow_goods_request" className="text-sm text-slate-600">グッズ追加リクエストを許可</label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="is_active"
-              checked={form.is_active}
-              onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-              className="rounded"
-            />
-            <label htmlFor="is_active" className="text-sm text-slate-600">イベントを有効にする</label>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-indigo-500 text-white px-4 py-2 rounded-xl hover:bg-indigo-400 disabled:opacity-50 text-sm font-semibold"
-            >
-              {saving ? '保存中...' : editingId ? '更新' : '作成'}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-300 text-sm"
-              >
-                キャンセル
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* テーブル */}
-      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* イベント一覧 */}
+      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+        <div className="px-4 py-3 bg-slate-100 border-b border-slate-300 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-slate-400">
+            イベント一覧（{events.length}件）
+          </h2>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 text-white hover:bg-indigo-400"
+          >
+            + 新規作成
+          </button>
+        </div>
         <table className="w-full">
           <thead className="bg-slate-100">
             <tr>
@@ -514,6 +294,243 @@ export default function EventsManagementPage() {
           </tbody>
         </table>
       </div>
+
+      {/* フォーム */}
+      {showForm && (
+        <div ref={formRef} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+          <h2 className="text-lg font-bold text-slate-800 mb-4">
+            {editingId ? 'イベント編集' : '新規イベント作成'}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">イベント名 *</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
+                  placeholder="例: 東京ドーム公演 2026"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">アーティスト名 *</label>
+                <input
+                  type="text"
+                  value={form.artist_name}
+                  onChange={(e) => setForm({ ...form, artist_name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
+                  placeholder="例: アーティスト名"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">開催日 *</label>
+                <input
+                  type="date"
+                  value={form.event_date}
+                  onChange={(e) => setForm({ ...form, event_date: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">会場</label>
+                <input
+                  type="text"
+                  value={form.venue}
+                  onChange={(e) => setForm({ ...form, venue: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
+                  placeholder="例: 東京ドーム"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">イベント画像URL</label>
+              <input
+                type="url"
+                value={form.image_url}
+                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"
+                placeholder="https://example.com/image.jpg"
+              />
+              {form.image_url && (
+                <div className="mt-2 h-48 rounded-xl overflow-hidden bg-slate-200 flex items-center justify-center">
+                  <img src={form.image_url} alt="プレビュー" className="max-w-full max-h-full object-contain" />
+                </div>
+              )}
+            </div>
+
+            {/* 登録可能期間 */}
+            <fieldset className="border border-slate-300 rounded-xl p-4">
+              <legend className="text-sm font-semibold text-slate-600 px-1">アイテム登録可能期間</legend>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">開始日時</label>
+                  <input
+                    type="datetime-local"
+                    value={form.register_start}
+                    onChange={(e) => setForm({ ...form, register_start: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">終了日時</label>
+                  <input
+                    type="datetime-local"
+                    value={form.register_end}
+                    onChange={(e) => setForm({ ...form, register_end: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            {/* 交換可能期間 */}
+            <fieldset className="border border-slate-300 rounded-xl p-4">
+              <legend className="text-sm font-semibold text-slate-600 px-1">交換可能期間</legend>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">開始日時</label>
+                  <input
+                    type="datetime-local"
+                    value={form.trade_start}
+                    onChange={(e) => setForm({ ...form, trade_start: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">終了日時</label>
+                  <input
+                    type="datetime-local"
+                    value={form.trade_end}
+                    onChange={(e) => setForm({ ...form, trade_end: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 text-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            {/* 会場エリア1〜3 */}
+            <div className="space-y-4">
+              {form.locations.map((loc, i) => (
+                <div key={i} className="border border-slate-300 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-600">{locationLabels[i]}</h3>
+                    {(loc.latitude || loc.longitude) && (
+                      <button
+                        type="button"
+                        onClick={() => clearLocation(i)}
+                        className="text-xs text-red-600 hover:text-red-500"
+                      >
+                        クリア
+                      </button>
+                    )}
+                  </div>
+                  <div className="mb-3">
+                    <LocationPickerMapWrapper
+                      lat={loc.latitude ? parseFloat(loc.latitude) : undefined}
+                      lng={loc.longitude ? parseFloat(loc.longitude) : undefined}
+                      radiusKm={loc.radius_km ? parseFloat(loc.radius_km) : undefined}
+                      onChange={(lat, lng) => {
+                        updateLocation(i, {
+                          latitude: String(lat),
+                          longitude: String(lng),
+                        })
+                      }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">緯度</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={loc.latitude}
+                        onChange={(e) => updateLocation(i, { latitude: e.target.value })}
+                        className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
+                        placeholder="35.7056"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">経度</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={loc.longitude}
+                        onChange={(e) => updateLocation(i, { longitude: e.target.value })}
+                        className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
+                        placeholder="139.7519"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">半径 (km)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={loc.radius_km}
+                        onChange={(e) => updateLocation(i, { radius_km: e.target.value })}
+                        className="w-full px-2 py-1 bg-slate-100 border border-slate-300 text-slate-800 rounded text-sm"
+                        placeholder="1.0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="enable_trade_groups"
+                checked={form.enable_trade_groups}
+                onChange={(e) => setForm({ ...form, enable_trade_groups: e.target.checked })}
+                className="rounded"
+              />
+              <label htmlFor="enable_trade_groups" className="text-sm text-slate-600">交換セット（複数グループ・比率指定）を有効にする</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="allow_goods_request"
+                checked={form.allow_goods_request}
+                onChange={(e) => setForm({ ...form, allow_goods_request: e.target.checked })}
+                className="rounded"
+              />
+              <label htmlFor="allow_goods_request" className="text-sm text-slate-600">グッズ追加リクエストを許可</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={form.is_active}
+                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                className="rounded"
+              />
+              <label htmlFor="is_active" className="text-sm text-slate-600">イベントを有効にする</label>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="bg-indigo-500 text-white px-4 py-2 rounded-xl hover:bg-indigo-400 disabled:opacity-50 text-sm font-semibold"
+              >
+                {saving ? '保存中...' : editingId ? '更新' : '作成'}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-300 text-sm"
+              >
+                キャンセル
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

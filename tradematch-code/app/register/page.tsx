@@ -504,8 +504,8 @@ export default function RegisterPage() {
                 <div className="p-4">
                   {/* 譲るグッズ */}
                   <div className="mb-6">
-                    <h3 className="text-lg font-bold text-indigo-600 mb-3 flex items-center gap-2">
-                      【譲】
+                    <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 text-white text-xl font-bold shrink-0">譲</span>
                       <span className="text-sm font-normal text-slate-400">
                         ({Object.keys(group.have).length}種類 / 合計{haveCount}個)
                       </span>
@@ -528,8 +528,8 @@ export default function RegisterPage() {
 
                   {/* 欲しいグッズ */}
                   <div>
-                    <h3 className="text-lg font-bold text-indigo-600 mb-3 flex items-center gap-2">
-                      【求】
+                    <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-pink-500 text-white text-xl font-bold shrink-0">求</span>
                       <span className="text-sm font-normal text-slate-400">
                         ({wantCount}種類から)
                       </span>
@@ -544,7 +544,7 @@ export default function RegisterPage() {
                           makeWantMap(group.wantItems),
                           (id) => toggleWant(idx, id),
                           null,
-                          'bg-indigo-500/20', 'border-indigo-400', 'bg-indigo-500',
+                          'bg-pink-500/20', 'border-pink-400', 'bg-pink-500',
                         )}
                       </div>
                     ))}

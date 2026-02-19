@@ -35,9 +35,11 @@ export default function GoodsManagementPage() {
   const [uploading, setUploading] = useState(false)
   const [bulkText, setBulkText] = useState('')
   const [bulkMode, setBulkMode] = useState(false)
+  const [showForm, setShowForm] = useState(false)
   const [imageTab, setImageTab] = useState<'upload' | 'url'>('upload')
   const [cropUrl, setCropUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -139,6 +141,7 @@ export default function GoodsManagementPage() {
     setForm(emptyForm)
     setEditingId(null)
     setSaving(false)
+    setShowForm(false)
     setImageTab('upload')
     setCropUrl('')
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -191,6 +194,7 @@ export default function GoodsManagementPage() {
   const startEdit = (goods: GoodsMaster) => {
     setEditingId(goods.id)
     setBulkMode(false)
+    setShowForm(true)
     setForm({
       name: goods.name,
       category: goods.category,
@@ -205,11 +209,13 @@ export default function GoodsManagementPage() {
       setImageTab('upload')
       setCropUrl('')
     }
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setShowForm(false)
     setImageTab('upload')
     setCropUrl('')
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -269,25 +275,96 @@ export default function GoodsManagementPage() {
         </select>
       </div>
 
-      {/* モード切り替え */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => { setBulkMode(false); setEditingId(null) }}
-          className={`px-4 py-2 rounded-xl text-sm ${!bulkMode ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'}`}
-        >
-          個別登録
-        </button>
-        <button
-          onClick={() => { setBulkMode(true); setEditingId(null); setForm(emptyForm) }}
-          className={`px-4 py-2 rounded-xl text-sm ${bulkMode ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'}`}
-        >
-          一括登録
-        </button>
+      {/* グッズ一覧 */}
+      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+        <div className="px-4 py-3 bg-slate-100 border-b border-slate-300 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-slate-400">
+            グッズ一覧（{goods.length}件）
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setShowForm(true); setBulkMode(false); setEditingId(null); setForm(emptyForm); setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 text-white hover:bg-indigo-400"
+            >
+              + 新規作成
+            </button>
+            <button
+              onClick={() => { setShowForm(true); setBulkMode(true); setEditingId(null); setForm(emptyForm); setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-600 hover:bg-slate-300"
+            >
+              一括登録
+            </button>
+          </div>
+        </div>
+        {loading ? (
+          <p className="px-4 py-8 text-center text-slate-500">読み込み中...</p>
+        ) : goods.length === 0 ? (
+          <p className="px-4 py-8 text-center text-slate-500">グッズがありません</p>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-slate-100">
+              <tr>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">画像</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">グッズ名</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">カテゴリ</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">ステータス</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {goods.map((g) => (
+                <tr key={g.id} className="hover:bg-slate-200">
+                  <td className="px-4 py-3">
+                    {g.image_url ? (
+                      <CroppedImage
+                        src={g.image_url}
+                        crop={g.image_crop}
+                        alt={g.name}
+                        className="h-10 w-10 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 bg-slate-200 rounded flex items-center justify-center text-slate-500 text-xs">
+                        No img
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-700">{g.name}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className="px-2 py-1 bg-slate-200 rounded text-xs text-slate-600">{g.category}</span>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      g.status === 'active' ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-200 text-slate-400'
+                    }`}>
+                      {g.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => startEdit(g)}
+                        className="text-indigo-600 hover:text-indigo-500"
+                      >
+                        編集
+                      </button>
+                      <button
+                        onClick={() => handleDelete(g.id)}
+                        className="text-red-600 hover:text-red-500"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* 個別登録フォーム */}
-      {!bulkMode && (
-        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      {/* 個別登録 / 編集フォーム */}
+      {showForm && !bulkMode && (
+        <div ref={formRef} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
           <h2 className="text-lg font-bold text-slate-800 mb-4">
             {editingId ? 'グッズ編集' : '新規グッズ作成'}
           </h2>
@@ -405,23 +482,21 @@ export default function GoodsManagementPage() {
               >
                 {saving ? '保存中...' : editingId ? '更新' : '作成'}
               </button>
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-300 text-sm"
-                >
-                  キャンセル
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-300 text-sm"
+              >
+                キャンセル
+              </button>
             </div>
           </form>
         </div>
       )}
 
       {/* 一括登録フォーム */}
-      {bulkMode && (
-        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      {showForm && bulkMode && (
+        <div ref={formRef} className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
           <h2 className="text-lg font-bold text-slate-800 mb-4">一括登録</h2>
           <p className="text-sm text-slate-400 mb-3">
             1行につき「カテゴリ,グッズ名」の形式で入力してください。
@@ -433,7 +508,7 @@ export default function GoodsManagementPage() {
             rows={10}
             placeholder={`アクリルスタンド,メンバーA\nアクリルスタンド,メンバーB\nうちわ,メンバーA\nうちわ,メンバーB`}
           />
-          <div className="mt-3">
+          <div className="mt-3 flex gap-2">
             <button
               onClick={handleBulkInsert}
               disabled={saving || !bulkText.trim()}
@@ -441,82 +516,15 @@ export default function GoodsManagementPage() {
             >
               {saving ? '登録中...' : '一括登録'}
             </button>
+            <button
+              onClick={() => { setShowForm(false); setBulkMode(false) }}
+              className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-300 text-sm"
+            >
+              キャンセル
+            </button>
           </div>
         </div>
       )}
-
-      {/* グッズ一覧 */}
-      <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-4 py-3 bg-slate-100 border-b border-slate-300">
-          <h2 className="text-sm font-medium text-slate-400">
-            グッズ一覧（{goods.length}件）
-          </h2>
-        </div>
-        {loading ? (
-          <p className="px-4 py-8 text-center text-slate-500">読み込み中...</p>
-        ) : goods.length === 0 ? (
-          <p className="px-4 py-8 text-center text-slate-500">グッズがありません</p>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">画像</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">グッズ名</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">カテゴリ</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">ステータス</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">操作</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {goods.map((g) => (
-                <tr key={g.id} className="hover:bg-slate-200">
-                  <td className="px-4 py-3">
-                    {g.image_url ? (
-                      <CroppedImage
-                        src={g.image_url}
-                        crop={g.image_crop}
-                        alt={g.name}
-                        className="h-10 w-10 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 bg-slate-200 rounded flex items-center justify-center text-slate-500 text-xs">
-                        No img
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-700">{g.name}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className="px-2 py-1 bg-slate-200 rounded text-xs text-slate-600">{g.category}</span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      g.status === 'active' ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-200 text-slate-400'
-                    }`}>
-                      {g.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => startEdit(g)}
-                        className="text-indigo-600 hover:text-indigo-500"
-                      >
-                        編集
-                      </button>
-                      <button
-                        onClick={() => handleDelete(g.id)}
-                        className="text-red-600 hover:text-red-500"
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
     </div>
   )
 }
