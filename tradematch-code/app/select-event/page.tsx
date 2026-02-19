@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, Event } from '@/lib/supabase';
 import EventAreaMapWrapper from '@/components/EventAreaMapWrapper';
 import { ClipboardList, Repeat, MapPin } from 'lucide-react';
@@ -32,20 +32,40 @@ function getEventAreas(event: Event) {
 }
 
 export default function SelectEventPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen flex items-center justify-center bg-[#1a2d4a]">
+        <div className="text-slate-400 text-2xl">読み込み中...</div>
+      </main>
+    }>
+      <SelectEventContent />
+    </Suspense>
+  );
+}
+
+function SelectEventContent() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const singleEventId = searchParams.get('event');
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
   const fetchEvents = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('events')
       .select('*')
       .eq('is_active', true)
       .order('event_date', { ascending: false });
+
+    if (singleEventId) {
+      query = query.eq('id', singleEventId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching events:', error);
@@ -79,11 +99,13 @@ export default function SelectEventPage() {
   return (
     <main className="min-h-screen bg-[#1a2d4a] p-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
-          <p className="text-slate-400">
-            参加する公演を選んでください
-          </p>
-        </div>
+        {!singleEventId && (
+          <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-6 mb-4">
+            <p className="text-slate-400">
+              参加する公演を選んでください
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           {events.map((event) => {
