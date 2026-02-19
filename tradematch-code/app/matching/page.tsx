@@ -15,6 +15,7 @@ interface TradeGroup {
   have: Record<string, number>;
   wantItems: string[];
   wantQuantity: number;
+  giveCount?: number;
 }
 
 interface GoodsWithQuantity {
@@ -29,6 +30,7 @@ interface GroupMatch {
   theyWantQty: number;
   youOffer: GoodsWithQuantity[];
   myWantQty: number;
+  myGiveCount: number;
 }
 
 interface MatchResult {
@@ -147,6 +149,7 @@ export default function MatchingPage() {
                   quantity: myGroup.have[id] || 1,
                 })),
                 myWantQty: myGroup.wantQuantity,
+                myGiveCount: myGroup.giveCount || 1,
               });
             }
           }
@@ -622,11 +625,15 @@ export default function MatchingPage() {
                 <div className="space-y-3 mb-4">
                   {match.groupMatches.map((gm, gmIdx) => (
                     <div key={gmIdx} className="bg-slate-100 rounded-xl p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
+                          {gm.myGiveCount || 1}:{gm.myWantQty} 交換
+                        </span>
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-50 rounded-lg p-2">
                           <p className="text-xs font-semibold text-indigo-600 mb-1">
                             相手が出せる
-                            <span className="text-slate-500 font-normal"> (欲しい数:{gm.myWantQty})</span>
                           </p>
                           <ul className="text-xs text-slate-600 space-y-0.5">
                             {gm.theyOffer.map((item, i) => (
@@ -637,7 +644,6 @@ export default function MatchingPage() {
                         <div className="bg-slate-50 rounded-lg p-2">
                           <p className="text-xs font-semibold text-indigo-600 mb-1">
                             あなたが出せる
-                            <span className="text-slate-500 font-normal"> (相手の欲しい数:{gm.theyWantQty})</span>
                           </p>
                           <ul className="text-xs text-slate-600 space-y-0.5">
                             {gm.youOffer.map((item, i) => (

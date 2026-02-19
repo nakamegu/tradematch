@@ -11,12 +11,22 @@ interface TradeGroup {
   have: Record<string, number>;
   wantItems: string[];
   wantQuantity: number;
+  giveCount: number;
 }
+
+const RATIO_PRESETS: [number, number][] = [
+  [1, 1],
+  [2, 1],
+  [1, 2],
+  [3, 1],
+  [1, 3],
+];
 
 const emptyGroup = (): TradeGroup => ({
   have: {},
   wantItems: [],
   wantQuantity: 1,
+  giveCount: 1,
 });
 
 export default function RegisterPage() {
@@ -124,11 +134,12 @@ export default function RegisterPage() {
     });
   };
 
-  const adjustWantQuantity = (groupIdx: number, delta: number) => {
-    updateGroup(groupIdx, (g) => {
-      const next = g.wantQuantity + delta;
-      return { ...g, wantQuantity: Math.max(1, next) };
-    });
+  const setRatio = (groupIdx: number, give: number, get: number) => {
+    updateGroup(groupIdx, (g) => ({
+      ...g,
+      giveCount: give,
+      wantQuantity: get,
+    }));
   };
 
   const addGroup = () => {
@@ -272,8 +283,8 @@ export default function RegisterPage() {
                   <span className="text-lg font-bold text-indigo-600">
                     交換セット {idx + 1}
                   </span>
-                  <span className="text-sm text-slate-400">
-                    出:{Object.keys(group.have).length}種{haveCount}個 / 欲:{wantCount}種×{group.wantQuantity}個
+                  <span className="text-sm font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
+                    {group.giveCount || 1}:{group.wantQuantity} 交換
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -342,29 +353,29 @@ export default function RegisterPage() {
                       </div>
                     ))}
 
-                    {/* 合計数量 */}
-                    <div className="mt-4 flex items-center gap-3 bg-slate-100 border border-slate-300 rounded-xl p-3">
-                      <span className="text-sm font-semibold text-slate-600">
-                        欲しい合計数:
-                      </span>
-                      <button
-                        onClick={() => adjustWantQuantity(idx, -1)}
-                        className="w-8 h-8 rounded-full bg-indigo-500 text-white font-bold flex items-center justify-center"
-                      >
-                        -
-                      </button>
-                      <span className="text-lg font-bold text-slate-700 w-8 text-center">
-                        {group.wantQuantity}
-                      </span>
-                      <button
-                        onClick={() => adjustWantQuantity(idx, 1)}
-                        className="w-8 h-8 rounded-full bg-indigo-500 text-white font-bold flex items-center justify-center"
-                      >
-                        +
-                      </button>
-                      <span className="text-xs text-slate-400">
-                        上記{wantCount}種類のうちどれでも{group.wantQuantity}個
-                      </span>
+                    {/* 交換比率 */}
+                    <div className="mt-4 bg-slate-100 border border-slate-300 rounded-xl p-3">
+                      <p className="text-sm font-semibold text-slate-600 mb-2">
+                        交換比率（譲る数 : 求める数）
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {RATIO_PRESETS.map(([g, w]) => {
+                          const isActive = (group.giveCount || 1) === g && group.wantQuantity === w;
+                          return (
+                            <button
+                              key={`${g}:${w}`}
+                              onClick={() => setRatio(idx, g, w)}
+                              className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                                isActive
+                                  ? 'bg-indigo-500 text-white'
+                                  : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-200'
+                              }`}
+                            >
+                              {g}:{w}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
