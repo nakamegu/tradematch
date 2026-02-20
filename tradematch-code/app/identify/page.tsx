@@ -43,6 +43,7 @@ export default function IdentifyPage() {
       case 'accepted': return '相手が承認しました！';
       case 'completed': return '交換完了！';
       case 'cancelled': return 'キャンセルされました';
+      case 'rejected': return '相手に拒否されました';
       default: return '';
     }
   };
@@ -524,8 +525,9 @@ export default function IdentifyPage() {
 
   const status = matchRecord?.status;
   const showIdentification = status === 'accepted' || status === 'completed';
-  const bgColor = status === 'pending' ? '#fef3c7' : status === 'cancelled' ? '#fecaca' : matchData.colorCode;
-  const pageTitle = status === 'pending' ? '承認待ち...' : status === 'cancelled' ? 'キャンセルされました' : '交換相手を見つけてください';
+  const isCancelledOrRejected = status === 'cancelled' || status === 'rejected';
+  const bgColor = status === 'pending' ? '#fef3c7' : isCancelledOrRejected ? '#fecaca' : matchData.colorCode;
+  const pageTitle = status === 'pending' ? '承認待ち...' : status === 'rejected' ? '拒否されました' : status === 'cancelled' ? 'キャンセルされました' : '交換相手を見つけてください';
 
   return (
     <div
@@ -546,18 +548,18 @@ export default function IdentifyPage() {
               ? 'bg-emerald-50 border border-emerald-200'
               : status === 'accepted'
               ? 'bg-blue-50 border border-blue-200'
-              : status === 'cancelled'
+              : isCancelledOrRejected
               ? 'bg-red-50 border border-red-200'
               : 'bg-amber-50 border border-amber-200'
           }`}>
             {status === 'pending' && <Loader2 className="w-6 h-6 text-amber-500 animate-spin shrink-0" />}
             {status === 'accepted' && <Check className="w-6 h-6 text-blue-500 shrink-0" />}
-            {status === 'cancelled' && <X className="w-6 h-6 text-red-500 shrink-0" />}
+            {isCancelledOrRejected && <X className="w-6 h-6 text-red-500 shrink-0" />}
             {status === 'completed' && <Check className="w-6 h-6 text-emerald-500 shrink-0" />}
             <span className={`font-bold text-lg ${
               status === 'completed' ? 'text-emerald-700'
                 : status === 'accepted' ? 'text-blue-700'
-                : status === 'cancelled' ? 'text-red-700'
+                : isCancelledOrRejected ? 'text-red-700'
                 : 'text-amber-700'
             }`}>
               {statusLabel}
@@ -717,7 +719,7 @@ export default function IdentifyPage() {
           </>
         )}
 
-        {status === 'cancelled' && (
+        {isCancelledOrRejected && (
           <button
             onClick={() => { localStorage.removeItem('currentMatch'); router.push('/matching'); }}
             className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors"

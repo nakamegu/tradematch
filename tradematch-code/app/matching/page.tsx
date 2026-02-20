@@ -599,6 +599,17 @@ export default function MatchingPage() {
     router.push('/identify');
   };
 
+  const handleRejectRequest = async () => {
+    if (!incomingRequest) return;
+
+    await supabase
+      .from('matches')
+      .update({ status: 'rejected' })
+      .eq('id', incomingRequest.matchRecordId);
+
+    setIncomingRequest(null);
+  };
+
   const handleAcceptRequest = async () => {
     if (!incomingRequest) return;
 
@@ -716,10 +727,10 @@ export default function MatchingPage() {
                     承認して識別へ
                   </button>
                   <button
-                    onClick={() => setIncomingRequest(null)}
-                    className="w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
+                    onClick={handleRejectRequest}
+                    className="w-full bg-red-50 text-red-500 py-3 rounded-xl font-semibold hover:bg-red-100 transition-colors"
                   >
-                    後で
+                    拒否する
                   </button>
                 </div>
               </div>
