@@ -742,7 +742,7 @@ export default function IdentifyPage() {
                 </p>
                 {matchData.groupMatches.map((gm: any, i: number) => (
                   <div key={i} className="mb-2 last:mb-0">
-                    <div className="flex gap-2 text-xs">
+                    <div className="flex flex-col gap-2 text-xs">
                       <div className="flex-1 bg-slate-50 rounded-lg p-2">
                         <p className="font-semibold text-indigo-600 mb-1">渡したもの</p>
                         {gm.youOffer?.map((item: any, j: number) => {
