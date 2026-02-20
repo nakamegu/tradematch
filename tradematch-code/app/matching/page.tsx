@@ -439,6 +439,9 @@ export default function MatchingPage() {
       if (pending && pending.length > 0 && pending[0].id !== lastSeenMatchId) {
         lastSeenMatchId = pending[0].id;
         processIncomingMatch(pending[0], userId);
+      } else if (lastSeenMatchId && (!pending || pending.length === 0)) {
+        lastSeenMatchId = null;
+        setIncomingRequest(null);
       }
     }, 5000);
 
@@ -598,6 +601,17 @@ export default function MatchingPage() {
 
   const handleAcceptRequest = async () => {
     if (!incomingRequest) return;
+
+    const { data: current } = await supabase
+      .from('matches')
+      .select('status')
+      .eq('id', incomingRequest.matchRecordId)
+      .single();
+
+    if (!current || current.status !== 'pending') {
+      setIncomingRequest(null);
+      return;
+    }
 
     await supabase
       .from('matches')
