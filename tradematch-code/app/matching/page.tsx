@@ -360,6 +360,14 @@ export default function MatchingPage() {
       }
     }, 60000);
 
+    // Poll for new matches every 15s (Realtime backup)
+    const matchSearchPollId = setInterval(() => {
+      const groups = tradeGroupsRef.current;
+      if (groups.length > 0) {
+        searchMatches(groups);
+      }
+    }, 15000);
+
     // Shared function to process an incoming match request
     const processIncomingMatch = async (matchRow: { id: string; user1_id: string; user2_id: string; color_code: string | null }, currentUserId: string) => {
       const [requesterRes, theirGoodsRes, myGoodsRes, goodsNamesRes] = await Promise.all([
@@ -493,6 +501,7 @@ export default function MatchingPage() {
       channelsRef.current = [];
       clearInterval(locationPollId);
       clearInterval(matchRequestPollId);
+      clearInterval(matchSearchPollId);
       if (watchIdRef.current != null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
