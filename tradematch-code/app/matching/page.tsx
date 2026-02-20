@@ -68,6 +68,7 @@ export default function MatchingPage() {
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const [eventData, setEventData] = useState<Event | null>(null);
   const [isInArea, setIsInArea] = useState(true);
+  const knownMatchIdsRef = useRef<Set<string>>(new Set());
   const { showDeleteConfirm, setShowDeleteConfirm, deleting, handleDeleteAllData } = useDeleteAccount();
 
   const searchMatches = useCallback(async (myGroups: TradeGroup[]) => {
@@ -183,9 +184,11 @@ export default function MatchingPage() {
       }
 
       setMatches(foundMatches);
-      if (foundMatches.length > 0) {
+      const newIds = foundMatches.filter((m) => !knownMatchIdsRef.current.has(m.id));
+      if (newIds.length > 0) {
         notifyMatch();
       }
+      knownMatchIdsRef.current = new Set(foundMatches.map((m) => m.id));
     } catch (err) {
       console.error('Search error:', err);
     } finally {
