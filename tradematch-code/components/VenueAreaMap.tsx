@@ -21,6 +21,15 @@ const blueIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+const violetIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 interface VenueArea {
   lat: number;
   lng: number;
@@ -79,12 +88,16 @@ export default function VenueAreaMap({ myLat, myLng, venues }: VenueAreaMapProps
         <Popup>あなたの現在地</Popup>
       </Marker>
       {venues.map((v, i) => (
-        <Circle
-          key={i}
-          center={[v.lat, v.lng]}
-          radius={v.radiusKm * 1000}
-          pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.15, weight: 2 }}
-        />
+        <span key={i}>
+          <Circle
+            center={[v.lat, v.lng]}
+            radius={v.radiusKm * 1000}
+            pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.15, weight: 2 }}
+          />
+          <Marker position={[v.lat, v.lng]} icon={violetIcon}>
+            <Popup>会場</Popup>
+          </Marker>
+        </span>
       ))}
       <FitAll myLat={myLat} myLng={myLng} venues={venues} />
     </MapContainer>
