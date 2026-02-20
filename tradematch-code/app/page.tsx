@@ -55,7 +55,7 @@ export default function Home() {
             </div>
             <div className="flex gap-3 items-start">
               <span className="shrink-0 w-6 h-6 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
-              <p className="text-sm text-slate-600">相手にリクエストを送り、<strong>承認</strong>されるのを待ちます</p>
+              <p className="text-sm text-slate-600">相手にリクエストを送り、<strong>承認</strong>されるのを待ちます。リクエストが届くと<strong>画面全体に通知</strong>が表示されます</p>
             </div>
             <div className="flex gap-3 items-start">
               <span className="shrink-0 w-6 h-6 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-bold">5</span>

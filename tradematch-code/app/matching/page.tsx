@@ -655,48 +655,60 @@ export default function MatchingPage() {
   return (
     <main className="min-h-screen bg-[#1a2d4a] p-4">
       <div className="max-w-2xl mx-auto">
-        {/* Incoming trade request */}
+        {/* Incoming trade request - fullscreen modal */}
         {incomingRequest && (
-          <div className="bg-amber-500/10 border-2 border-amber-500/30 p-5 rounded-2xl mb-4">
-            <p className="font-bold text-amber-600 text-lg mb-3 flex items-center gap-2">
-              <Bell className="w-5 h-5" /> {incomingRequest.requesterName}さんから交換リクエスト！
-            </p>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-modal-in">
+              {/* Amber header */}
+              <div className="bg-amber-500 rounded-t-2xl px-6 py-4 flex items-center gap-3">
+                <Bell className="w-7 h-7 text-white animate-bell-shake" />
+                <h2 className="text-xl font-bold text-white">交換リクエスト！</h2>
+              </div>
 
-            {/* 交換内容 */}
-            {(incomingRequest.theyOffer.length > 0 || incomingRequest.theyWant.length > 0) && (
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="bg-white/60 rounded-lg p-2">
-                  <p className="text-xs font-semibold text-indigo-600 mb-1">もらえるグッズ</p>
-                  <ul className="text-xs text-slate-700 space-y-0.5">
-                    {incomingRequest.theyOffer.map((item, i) => (
-                      <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="bg-white/60 rounded-lg p-2">
-                  <p className="text-xs font-semibold text-indigo-600 mb-1">渡すグッズ</p>
-                  <ul className="text-xs text-slate-700 space-y-0.5">
-                    {incomingRequest.theyWant.map((item, i) => (
-                      <li key={i}>✓ {item.name}</li>
-                    ))}
-                  </ul>
+              <div className="p-6">
+                {/* Requester name */}
+                <p className="text-2xl font-bold text-slate-800 text-center mb-4">
+                  {incomingRequest.requesterName} さん
+                </p>
+
+                {/* 交換内容 */}
+                {(incomingRequest.theyOffer.length > 0 || incomingRequest.theyWant.length > 0) && (
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-indigo-50 rounded-xl p-3">
+                      <p className="text-xs font-bold text-indigo-600 mb-2">もらえるグッズ</p>
+                      <ul className="text-sm text-slate-700 space-y-1">
+                        {incomingRequest.theyOffer.map((item, i) => (
+                          <li key={i}>✓ {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-amber-50 rounded-xl p-3">
+                      <p className="text-xs font-bold text-amber-600 mb-2">渡すグッズ</p>
+                      <ul className="text-sm text-slate-700 space-y-1">
+                        {incomingRequest.theyWant.map((item, i) => (
+                          <li key={i}>✓ {item.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Buttons */}
+                <div className="space-y-3">
+                  <button
+                    onClick={handleAcceptRequest}
+                    className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-4 rounded-xl font-bold text-lg transition-colors"
+                  >
+                    承認して識別へ
+                  </button>
+                  <button
+                    onClick={() => setIncomingRequest(null)}
+                    className="w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
+                  >
+                    後で
+                  </button>
                 </div>
               </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleAcceptRequest}
-                className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold transition-colors"
-              >
-                承認して識別へ
-              </button>
-              <button
-                onClick={() => setIncomingRequest(null)}
-                className="px-4 bg-slate-100 text-slate-600 py-3 rounded-xl font-semibold hover:bg-slate-300 transition-colors"
-              >
-                後で
-              </button>
             </div>
           </div>
         )}
