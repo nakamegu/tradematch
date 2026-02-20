@@ -349,16 +349,23 @@ export default function MatchingPage() {
       startMatching(0, 0);
     }
 
-    // Fallback: poll location every 60s for when watchPosition doesn't fire (stationary)
+    // Fallback: poll location every 30s and update both local state and DB
     const locationPollId = setInterval(() => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            setMyLocation({ lat, lng });
+            if (lat !== 0 || lng !== 0) {
+              supabase.rpc('update_user_location', { lat, lng });
+            }
+          },
           () => {},
-          { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
+          { enableHighAccuracy: false, maximumAge: 10000, timeout: 10000 }
         );
       }
-    }, 60000);
+    }, 30000);
 
     // Poll for new matches every 15s (Realtime backup)
     const matchSearchPollId = setInterval(() => {
