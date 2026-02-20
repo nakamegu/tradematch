@@ -8,7 +8,7 @@ import type { Match, MatchMessage, Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
-import { User, Lightbulb, Zap, Check, Eye, X, MessageCircle, Send } from 'lucide-react';
+import { User, Lightbulb, Zap, Check, Eye, X, MessageCircle, Send, Loader2 } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 export default function IdentifyPage() {
@@ -522,30 +522,46 @@ export default function IdentifyPage() {
     return null;
   }
 
+  const status = matchRecord?.status;
+  const showIdentification = status === 'accepted' || status === 'completed';
+  const bgColor = status === 'pending' ? '#fef3c7' : status === 'cancelled' ? '#fecaca' : matchData.colorCode;
+  const pageTitle = status === 'pending' ? '承認待ち...' : status === 'cancelled' ? 'キャンセルされました' : '交換相手を見つけてください';
+
   return (
     <div
       className={`min-h-screen flex flex-col items-center justify-center p-6 transition-all duration-300 ${
         isFlashing ? 'animate-pulse' : ''
       }`}
-      style={{ backgroundColor: matchData.colorCode }}
+      style={{ backgroundColor: bgColor }}
     >
       <div className="bg-slate-50/95 backdrop-blur-sm rounded-2xl p-8 shadow-sm text-center max-w-md w-full">
         <h1 className="text-3xl font-bold mb-6 text-slate-800">
-          交換相手を見つけてください
+          {pageTitle}
         </h1>
 
-        {/* Status badge */}
+        {/* Status card */}
         {statusLabel && (
-          <div className={`inline-block px-4 py-2 rounded-full text-sm font-bold mb-4 ${
-            matchRecord?.status === 'completed'
-              ? 'bg-emerald-500/20 text-emerald-600'
-              : matchRecord?.status === 'accepted'
-              ? 'bg-blue-500/20 text-blue-600'
-              : matchRecord?.status === 'cancelled'
-              ? 'bg-red-500/20 text-red-600'
-              : 'bg-amber-500/20 text-amber-600'
+          <div className={`w-full rounded-xl p-4 mb-4 flex items-center gap-3 ${
+            status === 'completed'
+              ? 'bg-emerald-50 border border-emerald-200'
+              : status === 'accepted'
+              ? 'bg-blue-50 border border-blue-200'
+              : status === 'cancelled'
+              ? 'bg-red-50 border border-red-200'
+              : 'bg-amber-50 border border-amber-200'
           }`}>
-            {statusLabel}
+            {status === 'pending' && <Loader2 className="w-6 h-6 text-amber-500 animate-spin shrink-0" />}
+            {status === 'accepted' && <Check className="w-6 h-6 text-blue-500 shrink-0" />}
+            {status === 'cancelled' && <X className="w-6 h-6 text-red-500 shrink-0" />}
+            {status === 'completed' && <Check className="w-6 h-6 text-emerald-500 shrink-0" />}
+            <span className={`font-bold text-lg ${
+              status === 'completed' ? 'text-emerald-700'
+                : status === 'accepted' ? 'text-blue-700'
+                : status === 'cancelled' ? 'text-red-700'
+                : 'text-amber-700'
+            }`}>
+              {statusLabel}
+            </span>
           </div>
         )}
 
@@ -559,19 +575,21 @@ export default function IdentifyPage() {
         </div>
 
         {/* Color code */}
-        <div className="bg-slate-100 rounded-2xl p-6 mb-6">
-          <p className="text-sm text-slate-400 mb-3 font-medium">識別カラー</p>
-          <div
-            className="w-40 h-40 mx-auto rounded-2xl shadow-sm"
-            style={{ backgroundColor: matchData.colorCode }}
-          />
-          <p className="text-xl font-mono font-bold mt-4 text-slate-700">
-            {matchData.colorCode}
-          </p>
-        </div>
+        {showIdentification && (
+          <div className="bg-slate-100 rounded-2xl p-6 mb-6">
+            <p className="text-sm text-slate-400 mb-3 font-medium">識別カラー</p>
+            <div
+              className="w-40 h-40 mx-auto rounded-2xl shadow-sm"
+              style={{ backgroundColor: matchData.colorCode }}
+            />
+            <p className="text-xl font-mono font-bold mt-4 text-slate-700">
+              {matchData.colorCode}
+            </p>
+          </div>
+        )}
 
         {/* Map (hidden outside event area) */}
-        {isInArea && myLocation.lat !== 0 && otherLocation.lat !== 0 && (
+        {showIdentification && isInArea && myLocation.lat !== 0 && otherLocation.lat !== 0 && (
           <div className="mb-6" style={{ height: '180px' }}>
             <TradeMapWrapper
               myLat={myLocation.lat}
@@ -584,7 +602,7 @@ export default function IdentifyPage() {
         )}
 
         {/* Chat */}
-        {matchData.matchRecordId && (
+        {showIdentification && matchData.matchRecordId && (
           <div className="mb-6">
             <button
               onClick={() => setChatOpen(!chatOpen)}
@@ -653,27 +671,36 @@ export default function IdentifyPage() {
         )}
 
         {/* Instructions */}
-        <div className="bg-slate-100 border border-slate-300 rounded-xl p-4 mb-6">
-          <p className="text-sm text-slate-600 leading-relaxed flex items-start gap-2">
-            <Lightbulb className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-            <span>この色を画面に表示して、会場で相手を探してください。
-            同じ色の画面を持っている人があなたの交換相手です！</span>
-          </p>
-        </div>
+        {showIdentification && (
+          <div className="bg-slate-100 border border-slate-300 rounded-xl p-4 mb-6">
+            <p className="text-sm text-slate-600 leading-relaxed flex items-start gap-2">
+              <Lightbulb className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+              <span>この色を画面に表示して、会場で相手を探してください。
+              同じ色の画面を持っている人があなたの交換相手です！</span>
+            </p>
+          </div>
+        )}
 
         {/* Action buttons */}
-        <button
-          onClick={handleFlash}
-          className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-4 rounded-xl font-bold text-lg transition-colors mb-3 flex items-center justify-center gap-2"
-        >
-          <Zap className="w-5 h-5" /> 画面を点滅させる
-        </button>
+        {showIdentification && (
+          <button
+            onClick={handleFlash}
+            className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-4 rounded-xl font-bold text-lg transition-colors mb-3 flex items-center justify-center gap-2"
+          >
+            <Zap className="w-5 h-5" /> 画面を点滅させる
+          </button>
+        )}
 
-        {matchRecord?.status === 'cancelled' ? (
-          <div className="w-full bg-red-500/20 text-red-600 py-3 rounded-xl font-semibold mb-3 flex items-center justify-center gap-2">
-            <X className="w-5 h-5" /> キャンセル済み
-          </div>
-        ) : matchRecord?.status !== 'completed' ? (
+        {status === 'pending' && (
+          <button
+            onClick={handleCancel}
+            className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 py-3 rounded-xl font-semibold transition-colors mb-3 flex items-center justify-center gap-2"
+          >
+            <X className="w-5 h-5" /> キャンセル
+          </button>
+        )}
+
+        {status === 'accepted' && (
           <>
             <button
               onClick={handleComplete}
@@ -688,7 +715,18 @@ export default function IdentifyPage() {
               <X className="w-5 h-5" /> 見つからない・キャンセル
             </button>
           </>
-        ) : (
+        )}
+
+        {status === 'cancelled' && (
+          <button
+            onClick={() => { localStorage.removeItem('currentMatch'); router.push('/matching'); }}
+            className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors"
+          >
+            マッチング画面に戻る
+          </button>
+        )}
+
+        {status === 'completed' && (
           <>
             <div className="w-full bg-emerald-500/20 text-emerald-600 py-3 rounded-xl font-semibold mb-3 flex items-center justify-center gap-2">
               <Check className="w-5 h-5" /> 交換完了済み
@@ -785,32 +823,31 @@ export default function IdentifyPage() {
             >
               トップに戻る
             </button>
+            <button
+              onClick={() => { localStorage.removeItem('currentMatch'); router.push('/matching'); }}
+              className="w-full bg-slate-100 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors"
+            >
+              マッチング画面に戻る
+            </button>
           </>
-        )}
-
-        {(matchRecord?.status === 'cancelled' || matchRecord?.status === 'completed') && (
-          <button
-            onClick={() => { localStorage.removeItem('currentMatch'); router.push('/matching'); }}
-            className="w-full bg-slate-100 hover:bg-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors"
-          >
-            マッチング画面に戻る
-          </button>
         )}
       </div>
 
       {/* How to find */}
-      <div className="mt-8 max-w-md">
-        <div className="bg-slate-50/90 backdrop-blur-sm rounded-2xl p-4">
-          <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-            <Eye className="w-5 h-5 text-indigo-600" /> 相手の見つけ方
-          </h3>
-          <ol className="text-sm text-slate-600 space-y-1 list-decimal list-inside">
-            <li>画面を目立つように掲げる</li>
-            <li>同じ色の画面を探す</li>
-            <li>お互いに確認したら交換開始！</li>
-          </ol>
+      {showIdentification && (
+        <div className="mt-8 max-w-md">
+          <div className="bg-slate-50/90 backdrop-blur-sm rounded-2xl p-4">
+            <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+              <Eye className="w-5 h-5 text-indigo-600" /> 相手の見つけ方
+            </h3>
+            <ol className="text-sm text-slate-600 space-y-1 list-decimal list-inside">
+              <li>画面を目立つように掲げる</li>
+              <li>同じ色の画面を探す</li>
+              <li>お互いに確認したら交換開始！</li>
+            </ol>
+          </div>
         </div>
-      </div>
+      )}
       <Footer />
     </div>
   );
