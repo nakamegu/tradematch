@@ -7,6 +7,7 @@ import { getCurrentUserId } from '@/lib/auth';
 import type { Event } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import TradeMapWrapper from '@/components/TradeMapWrapper';
+import VenueAreaMapWrapper from '@/components/VenueAreaMapWrapper';
 import { isWithinEventArea } from '@/lib/geo';
 import { useDeleteAccount } from '@/lib/useDeleteAccount';
 import { MapPin, Loader2, SearchX, Lightbulb, User, Bell } from 'lucide-react';
@@ -737,6 +738,32 @@ export default function MatchingPage() {
             </div>
           </div>
         )}
+
+        {/* Venue area map when user is outside */}
+        {!isInArea && eventData && myLocation.lat !== 0 && (() => {
+          const venues = [
+            { lat: eventData.latitude, lng: eventData.longitude, radiusKm: eventData.radius_km },
+            { lat: eventData.latitude2, lng: eventData.longitude2, radiusKm: eventData.radius_km2 },
+            { lat: eventData.latitude3, lng: eventData.longitude3, radiusKm: eventData.radius_km3 },
+          ].filter((v): v is { lat: number; lng: number; radiusKm: number } =>
+            v.lat != null && v.lng != null && v.radiusKm != null
+          );
+          return venues.length > 0 ? (
+            <div className="bg-slate-50 rounded-2xl shadow-sm border border-red-200 p-4 mb-4">
+              <p className="text-sm font-bold text-red-600 mb-2">
+                <MapPin className="w-4 h-4 inline-block mr-1" />
+                会場エリア外にいます
+              </p>
+              <div style={{ height: '200px' }}>
+                <VenueAreaMapWrapper
+                  myLat={myLocation.lat}
+                  myLng={myLocation.lng}
+                  venues={venues}
+                />
+              </div>
+            </div>
+          ) : null;
+        })()}
 
         {matches.length === 0 ? (
           <div className="bg-slate-50 rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
