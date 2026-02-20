@@ -352,7 +352,7 @@ export default function MatchingPage() {
       startMatching(0, 0);
     }
 
-    // Fallback: poll location every 30s and update both local state and DB
+    // Poll location every 10s with no cache, update local state + DB
     const locationPollId = setInterval(() => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -365,10 +365,10 @@ export default function MatchingPage() {
             }
           },
           () => {},
-          { enableHighAccuracy: false, maximumAge: 10000, timeout: 10000 }
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
         );
       }
-    }, 30000);
+    }, 10000);
 
     // Poll for new matches every 15s (Realtime backup)
     const matchSearchPollId = setInterval(() => {
